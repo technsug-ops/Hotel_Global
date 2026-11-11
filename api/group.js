@@ -14,7 +14,16 @@ export default async function handler(req, res) {
     if (b.etag && b.etag !== cur.etag) return res.status(409).json({ error: 'Kayıt başka biri tarafından değiştirildi. Sayfayı yenileyin.' });
     const g = cur.data;
     const now = new Date().toISOString();
-    if (b.settings) g.settings = cleanSettings(b.settings);
+    if (b.settings) {
+      const prev = g.settings, next = cleanSettings(b.settings);
+      if (prev.in !== next.in || prev.out !== next.out) {
+        const t = `Tarih değişti: ${prev.in || '—'} → ${prev.out || '—'} yerine ${next.in || '—'} → ${next.out || '—'}`;
+        g.history = [{ at: now, by: 'otel', text: t }, ...(g.history || [])].slice(0, 200);
+        pushAlert(g, t + '. Grup sorumlusuna bildirin; son tarihler yeni tarihe göre kaydı.');
+      }
+      if (prev.status !== next.status) g.history = [{ at: now, by: 'otel', text: `Durum: ${prev.status} → ${next.status}` }, ...(g.history || [])].slice(0, 200);
+      g.settings = next;
+    }
     if (b.submission) g.submission = cleanSubmission(b.submission, true);
     if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
     if (b.pending === 'approve' && g.pending) {
