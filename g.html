@@ -28,6 +28,11 @@
       </div>
     </div>
     <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Hazır listeniz var mı?</h2><button type="button" class="btn ghost small" id="impOpen">Listeyi içe aktar</button></div>
+      <p class="note">Katılımcı listeniz Google Sheets, Excel ya da bir kayıt formunda hazırsa tek tek yazmanıza gerek yok. İçe aktardıktan sonra oda dağılımını kontrol edip gönderin.</p>
+      <div id="imp"></div>
+    </div>
+    <div class="card">
       <div class="row" style="justify-content:space-between"><h2>Konaklayanlar · odalar</h2><button type="button" class="btn small" id="addRoom">+ Oda ekle</button></div>
       <p class="note">Her oda için oda tipini seçin ve odada kalacak kişileri yazın. 0–2 yaş bebekler yatak saymaz; bebek yatağı isteyebilirsiniz. Çocuk ücreti: 0–2 yaş ücretsiz · 3–7 yaş %50 · 8 yaş ve üstü tam ücret.</p>
       <div id="rooms" style="display:grid;gap:12px"></div>
@@ -42,6 +47,7 @@
   </main>
 </div>
 <script src="/common.js"></script>
+<script src="/importer.js"></script>
 <script>
 const { $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, renderEditor, api } = HG;
 const token = new URLSearchParams(location.search).get("t") || "";
@@ -66,6 +72,7 @@ function draw() {
 }
 ["name", "phone", "mail"].forEach((k) => { $("f_" + k).oninput = () => { sub.leader[k] = $("f_" + k).value; markDirty(); }; });
 $("addRoom").onclick = () => { sub.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
+$("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => sub, token, onApply: () => { markDirty(); draw(); } });
 $("addDay").onclick = () => { sub.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
 $("send").onclick = async () => {
   const ce = HG.capacityErrors(sub);

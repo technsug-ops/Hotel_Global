@@ -97,6 +97,7 @@
 
     <div id="t-odalama" class="hidden" style="display:grid;gap:18px">
       <p class="note">Grup sorumlusunun gönderdiği liste. Otel de buradan düzeltebilir ve oda numarası atayabilir.</p>
+      <div class="card"><div class="row" style="justify-content:space-between"><h3>Dışarıdan liste içe aktar</h3><button type="button" class="btn ghost small" id="impOpen">Google Sheets / Excel / CSV</button></div><div id="imp"></div></div>
       <div class="card"><div class="row" style="justify-content:space-between"><h3>Odalar</h3><button type="button" class="btn small" id="addRoom">+ Oda ekle</button></div><div id="rooms" style="display:grid;gap:12px"></div></div>
       <div class="card"><div class="row" style="justify-content:space-between"><h3>Günübirlik</h3><button type="button" class="btn small" id="addDay">+ Kişi ekle</button></div><div id="days" style="display:grid;gap:8px"></div></div>
       <div class="card"><h3>Ödeme ve fatura</h3><div id="inv" style="display:grid;gap:8px"></div></div>
@@ -124,6 +125,7 @@
   </section>
 </div>
 <script src="/common.js"></script>
+<script src="/importer.js"></script>
 <script>
 const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api } = HG;
 let G = null, ETAG = null, dirtySub = false;
@@ -236,6 +238,7 @@ function drawDetail() {
 }
 $("addRoom").onclick = () => { G.submission.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "", paid: false, given: false, no: "" }); dirtySub = true; drawDetail(); };
 $("addDay").onclick = () => { G.submission.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "", paid: false, given: false }); dirtySub = true; drawDetail(); };
+$("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => G.submission, onApply: () => { dirtySub = true; drawDetail(); tab("odalama"); $("saveState").textContent = "İçe aktarıldı · kaydetmeyi unutmayın"; } });
 $("saveSub").onclick = async () => { if (await save({ submission: G.submission, note: "Otel odalamayı güncelledi" }, "Odalama kaydedildi")) dirtySub = false; };
 $("saveSet").onclick = () => {
   const s = { ...G.settings };
