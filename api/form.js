@@ -1,4 +1,4 @@
-import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert } from './_lib.js';
+import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, mergeSubmission, roomingDeadline, describe } from './_lib.js';
 
 async function load(token) {
   if (!isId(token)) return null;
@@ -15,35 +15,36 @@ export default async function handler(req, res) {
     if (!cur) return res.status(404).json({ error: 'Link geçersiz veya süresi dolmuş.' });
     const g = cur.data;
     if (g.settings.status === 'İptal') return res.status(410).json({ error: 'Bu grup kaydı iptal edildi.' });
+    const deadline = roomingDeadline(g.settings);
     const pub = () => ({
       settings: { name: g.settings.name, leader: g.settings.leader, in: g.settings.in, out: g.settings.out, paymode: g.settings.paymode, pNight: g.settings.pNight, pDay: g.settings.pDay, pSingle: g.settings.pSingle, deadline: g.settings.deadline },
-      submission: cleanSubmission(g.submission || {}), submittedAt: g.submittedAt,
+      submission: cleanSubmission(g.pending ? g.pending.submission : (g.submission || {})),
+      submittedAt: g.submittedAt, locked: !!(deadline && new Date() > deadline),
+      pending: g.pending ? { at: g.pending.at } : null,
     });
     if (req.method === 'GET') return res.status(200).json(pub());
     if (req.method !== 'POST') return res.status(405).end();
 
-    const now = new Date();
+    const now = new Date(), nowIso = now.toISOString();
     const incoming = cleanSubmission(req.body || {});
-    const old = g.submission || { rooms: [], days: [] };
-    const anyPaid = (old.rooms || []).some((r) => r.paid || r.given) || (old.days || []).some((d) => d.paid || d.given) || old.groupPay?.paid;
-    // personel alanlarını (ödendi, verildi, oda no) aynı sıradaki kayıtlara geri yaz
-    incoming.rooms.forEach((r, i) => { const o = old.rooms?.[i]; if (o) Object.assign(r, { paid: !!o.paid, given: !!o.given, no: o.no || '' }); });
-    incoming.days.forEach((d, i) => { const o = old.days?.[i]; if (o) Object.assign(d, { paid: !!o.paid, given: !!o.given }); });
-    incoming.groupPay = old.groupPay || { paid: false, given: false };
-
-    const people = incoming.rooms.reduce((x, r) => x + r.people.length, 0);
-    const text = `Grup sorumlusu formu ${g.submittedAt ? 'güncelledi' : 'gönderdi'}: ${incoming.rooms.length} oda, ${people} konaklayan, ${incoming.days.length} günübirlik`;
-    const first = !g.submittedAt;
-    const deadline = g.settings.in ? new Date(g.settings.in + 'T12:00:00') : null;
-    if (deadline) deadline.setDate(deadline.getDate() - (g.settings.deadline || 0));
-    if (!first) pushAlert(g, `Değişiklik: ${text}`);
-    if (deadline && now > deadline) pushAlert(g, `Son tarihten sonra gönderim (${text})`);
-    if (anyPaid) pushAlert(g, 'Ödeme kaydı yapıldıktan sonra grup listesi değişti. Tahsilat listesini kontrol edin.');
-
-    g.submission = incoming;
-    g.submittedAt = now.toISOString();
-    g.updatedAt = g.submittedAt;
-    g.history = [{ at: g.submittedAt, by: 'grup', text }, ...(g.history || [])].slice(0, 200);
+    const text = describe(incoming);
+    if (deadline && now > deadline) {
+      // son tarih geçti: değişiklik otel onayına kadar bekler
+      g.pending = { at: nowIso, submission: incoming };
+      pushAlert(g, `Son tarihten sonra değişiklik talebi (${text}). Onaylayın veya reddedin.`);
+      g.history = [{ at: nowIso, by: 'grup', text: `Değişiklik talebi gönderildi: ${text}` }, ...(g.history || [])].slice(0, 200);
+    } else {
+      const first = !g.submittedAt;
+      const old = g.submission || { rooms: [], days: [] };
+      const anyPaid = (old.rooms || []).some((r) => r.paid || r.given) || (old.days || []).some((d) => d.paid || d.given) || old.groupPay?.paid;
+      if (!first) pushAlert(g, `Grup sorumlusu formu güncelledi: ${text}`);
+      if (anyPaid) pushAlert(g, 'Ödeme kaydı yapıldıktan sonra grup listesi değişti. Tahsilat listesini kontrol edin.');
+      g.submission = mergeSubmission(old, incoming);
+      g.submittedAt = nowIso;
+      g.pending = null;
+      g.history = [{ at: nowIso, by: 'grup', text: `Form ${first ? 'gönderildi' : 'güncellendi'}: ${text}` }, ...(g.history || [])].slice(0, 200);
+    }
+    g.updatedAt = nowIso;
     await writeJSON(groupPath(g.id), g, cur.etag);
     return res.status(200).json(pub());
   } catch (e) {

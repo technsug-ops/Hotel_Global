@@ -45,7 +45,7 @@
 <script>
 const { $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, renderEditor, api } = HG;
 const token = new URLSearchParams(location.search).get("t") || "";
-let st, sub, submittedAt, dirty = false;
+let st, sub, submittedAt, locked = false, pending = null, dirty = false;
 const els = { rooms: $("rooms"), days: $("days"), inv: $("inv") };
 const markDirty = () => { dirty = true; $("dirty").textContent = "Gönderilmemiş değişiklik var."; };
 window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
@@ -53,8 +53,11 @@ window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault()
 function draw() {
   $("grpLine").textContent = `${st.name} · ${dTR(st.in)} → ${dTR(st.out)} · ${nights(st)} gece`;
   const left = daysLeft(st);
-  $("intro").innerHTML = `Sayın ${esc(st.leader || "grup sorumlusu")}, grubunuzun odalama ve katılımcı bilgilerini lütfen <b>en geç ${deadlineDate(st).toLocaleDateString("tr-TR")}</b> tarihine kadar doldurun${left >= 0 ? ` (${left} gün kaldı)` : ` <span class="chip crit">son tarih geçti</span>`}. Check-in 14:00, check-out 10:00. Resepsiyonumuz 24 saat hizmet verir.`;
-  $("status").innerHTML = submittedAt ? `<span class="chip ok">Son gönderim: ${esc(dtTR(submittedAt))}</span>` : `<span class="chip warn">Henüz gönderilmedi</span>`;
+  $("intro").innerHTML = `Sayın ${esc(st.leader || "grup sorumlusu")}, grubunuzun odalama ve katılımcı bilgilerini lütfen <b>en geç ${deadlineDate(st).toLocaleDateString("tr-TR")}</b> tarihine kadar doldurun${left >= 0 ? ` (${left} gün kaldı)` : ` <span class="chip crit">son tarih geçti</span>`}. Check-in 14:00, check-out 10:00. Resepsiyonumuz 24 saat hizmet verir.<br><b>Bu tarihten sonra yapılan değişiklikler otele talep olarak iletilir; karşılanıp karşılanmayacağı otelin takdirindedir.</b>`;
+  $("send").textContent = locked ? "Değişiklik talebi gönder" : "Formu gönder";
+  $("status").innerHTML = (locked ? `<div class="flag warn"><span class="chip warn">Son tarih geçti</span><span>Odalama son tarihi geçti. Göndereceğiniz değişiklikler otele <b>talep</b> olarak iletilir ve otel onaylarsa uygulanır.</span></div>` : "")
+    + (pending ? `<div class="flag warn"><span class="chip warn">Onay bekliyor</span><span>${esc(dtTR(pending.at))} tarihli değişiklik talebiniz otelin onayını bekliyor. Aşağıda talep ettiğiniz hali görüyorsunuz.</span></div>` : "")
+    + (submittedAt ? `<span class="chip ok">Son gönderim: ${esc(dtTR(submittedAt))}</span>` : `<span class="chip warn">Henüz gönderilmedi</span>`);
   const priceTxt = `Konaklama ${eur(st.pNight)} / kişi / gece${st.pDay ? ` · günübirlik ${eur(st.pDay)} / kişi` : ""}${st.pSingle ? ` · tek kişilik oda farkı ${eur(st.pSingle)} / gece` : ""}.`;
   $("invNote").textContent = (st.paymode === "kisi"
     ? "Herkes kendi ücretini girişte öder. Fatura isteyenler bilgilerini burada bırakırsa fatura, çıkışı takip eden hafta içinde e-posta ile gönderilir. "
@@ -68,14 +71,14 @@ $("send").onclick = async () => {
   $("send").disabled = true;
   try {
     const r = await api(`/api/form?t=${encodeURIComponent(token)}`, { method: "POST", body: sub });
-    sub = r.submission; submittedAt = r.submittedAt; dirty = false; $("dirty").textContent = "";
-    draw(); toast("Teşekkürler, bilgiler otele iletildi.");
+    sub = r.submission; submittedAt = r.submittedAt; locked = r.locked; pending = r.pending; dirty = false; $("dirty").textContent = "";
+    draw(); toast(r.pending ? "Değişiklik talebiniz otele iletildi. Onaylanınca uygulanacak." : "Teşekkürler, bilgiler otele iletildi.");
   } catch (e) { toast(e.message); } finally { $("send").disabled = false; }
 };
 (async () => {
   try {
     const r = await api(`/api/form?t=${encodeURIComponent(token)}`);
-    st = r.settings; sub = r.submission; submittedAt = r.submittedAt;
+    st = r.settings; sub = r.submission; submittedAt = r.submittedAt; locked = r.locked; pending = r.pending;
     sub.leader = sub.leader || { name: "", phone: "", mail: "" };
     ["name", "phone", "mail"].forEach((k) => ($("f_" + k).value = sub.leader[k] || ""));
     $("app").classList.remove("hidden"); draw();

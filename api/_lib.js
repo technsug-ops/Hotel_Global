@@ -122,7 +122,7 @@ export function summary(g) {
     sleepers: (s.rooms || []).reduce((x, r) => x + r.people.length, 0), days: (s.days || []).length,
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
     confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
-    confirmedAt: g.confirmedAt || null, lastCall: (g.calls || [])[0] || null, leader: g.settings.leader, phone: g.settings.phone,
+    confirmedAt: g.confirmedAt || null, pending: !!g.pending, lastCall: (g.calls || [])[0] || null, leader: g.settings.leader, phone: g.settings.phone,
   };
 }
 export function pushAlert(g, text) {
@@ -135,3 +135,19 @@ export const CALL_RESULTS = ['Kesinleşti', 'Değişiklik var', 'Ulaşılamadı'
 export function cleanCall(c = {}) {
   return { result: CALL_RESULTS.includes(c.result) ? c.result : 'Tekrar aranacak', note: str(c.note, 500), by: str(c.by, 60) };
 }
+
+/* grup sorumlusunun listesini personel alanlarını (ödendi, verildi, oda no) koruyarak uygula */
+export function mergeSubmission(old = {}, incoming) {
+  const out = JSON.parse(JSON.stringify(incoming));
+  out.rooms.forEach((r, i) => { const o = old.rooms?.[i]; Object.assign(r, { paid: !!o?.paid, given: !!o?.given, no: o?.no || '' }); });
+  out.days.forEach((d, i) => { const o = old.days?.[i]; Object.assign(d, { paid: !!o?.paid, given: !!o?.given }); });
+  out.groupPay = old.groupPay || { paid: false, given: false };
+  return out;
+}
+export function roomingDeadline(settings) {
+  if (!settings.in) return null;
+  const d = new Date(settings.in + 'T23:59:59');
+  d.setDate(d.getDate() - (Number(settings.deadline) || 0));
+  return d;
+}
+export const describe = (sub) => `${sub.rooms.length} oda, ${sub.rooms.reduce((x, r) => x + r.people.length, 0)} konaklayan, ${sub.days.length} günübirlik`;

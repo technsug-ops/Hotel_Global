@@ -1,4 +1,4 @@
-import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert } from './_lib.js';
+import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, mergeSubmission, describe } from './_lib.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -17,6 +17,15 @@ export default async function handler(req, res) {
     if (b.settings) g.settings = cleanSettings(b.settings);
     if (b.submission) g.submission = cleanSubmission(b.submission, true);
     if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
+    if (b.pending === 'approve' && g.pending) {
+      g.submission = mergeSubmission(g.submission || {}, g.pending.submission);
+      g.submittedAt = g.pending.at;
+      g.history = [{ at: now, by: 'otel', text: `Değişiklik talebi onaylandı: ${describe(g.pending.submission)}` }, ...(g.history || [])].slice(0, 200);
+      g.pending = null;
+    } else if (b.pending === 'reject' && g.pending) {
+      g.history = [{ at: now, by: 'otel', text: `Değişiklik talebi reddedildi: ${describe(g.pending.submission)}` }, ...(g.history || [])].slice(0, 200);
+      g.pending = null;
+    }
     if (b.call) {
       const c = { at: now, ...cleanCall(b.call) };
       g.calls = [c, ...(g.calls || [])].slice(0, 100);
