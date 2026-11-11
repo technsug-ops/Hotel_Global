@@ -1,0 +1,128 @@
+import { put, get, list } from '@vercel/blob';
+import crypto from 'node:crypto';
+
+const SECRET = process.env.SESSION_SECRET || '';
+const COOKIE = 'hg_s';
+const SESSION_HOURS = 12;
+
+export const ROOM_TYPES = ['EZ', 'DZ', 'ZBZ', 'DBZ', 'VBZ', 'SUP FAM'];
+export const AGE_KEYS = ['Y', 'C8', 'C3', 'C0'];
+
+/* ---------- auth ---------- */
+const sign = (v) => crypto.createHmac('sha256', SECRET).update(v).digest('base64url');
+function safeEq(a, b) {
+  const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+}
+function cookies(req) {
+  const out = {};
+  for (const part of String(req.headers.cookie || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0) out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return out;
+}
+export function checkPassword(pw) {
+  const real = process.env.STAFF_PASSWORD || '';
+  return real.length > 0 && safeEq(pw || '', real);
+}
+export function setSession(res) {
+  const exp = Date.now() + SESSION_HOURS * 3600e3;
+  const payload = `staff.${exp}`;
+  res.setHeader('Set-Cookie', `${COOKIE}=${payload}.${sign(payload)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_HOURS * 3600}`);
+}
+export function clearSession(res) {
+  res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+}
+export function isStaff(req) {
+  if (!SECRET) return false;
+  const c = cookies(req)[COOKIE];
+  if (!c) return false;
+  const i = c.lastIndexOf('.');
+  if (i < 0) return false;
+  const payload = c.slice(0, i), sig = c.slice(i + 1);
+  if (!safeEq(sign(payload), sig)) return false;
+  return Number(payload.split('.')[1]) > Date.now();
+}
+export function requireStaff(req, res) {
+  if (isStaff(req)) return true;
+  res.status(401).json({ error: 'Oturum gerekli' });
+  return false;
+}
+
+/* ---------- storage (Vercel Blob, private) ---------- */
+export async function readJSON(path) {
+  const r = await get(path, { access: 'private', useCache: false });
+  if (!r || r.statusCode !== 200) return null;
+  const text = await new Response(r.stream).text();
+  return { data: JSON.parse(text), etag: r.blob.etag };
+}
+export async function writeJSON(path, data, etag) {
+  const opts = { access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json', cacheControlMaxAge: 60 };
+  if (etag) opts.ifMatch = etag;
+  return put(path, JSON.stringify(data), opts);
+}
+export async function listPaths(prefix) {
+  const out = [];
+  let cursor;
+  do {
+    const r = await list({ prefix, cursor, limit: 1000 });
+    out.push(...r.blobs.map((b) => b.pathname));
+    cursor = r.hasMore ? r.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+export const groupPath = (id) => `groups/${id}.json`;
+export const tokenPath = (t) => `tokens/${t}.json`;
+export const newId = (bytes = 9) => crypto.randomBytes(bytes).toString('base64url');
+export const isId = (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{8,40}$/.test(v);
+
+/* ---------- validation ---------- */
+const str = (v, n = 200) => String(v ?? '').trim().slice(0, n);
+const num = (v, min = 0, max = 100000) => Math.min(max, Math.max(min, Number(v) || 0));
+const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : '');
+
+export function cleanSettings(s = {}) {
+  return {
+    name: str(s.name, 120), leader: str(s.leader, 80), phone: str(s.phone, 40), mail: str(s.mail, 120),
+    in: date(s.in), out: date(s.out), paymode: s.paymode === 'grup' ? 'grup' : 'kisi',
+    pNight: num(s.pNight), pDay: num(s.pDay), pSingle: num(s.pSingle), deadline: num(s.deadline, 0, 60),
+    salon: str(s.salon, 80), notes: str(s.notes, 1000),
+    status: ['Teklif', 'Opsiyon', 'Kesin', 'İptal'].includes(s.status) ? s.status : 'Opsiyon',
+  };
+}
+function cleanPerson(p = {}) {
+  return { n: str(p.n, 80), a: AGE_KEYS.includes(p.a) ? p.a : 'Y' };
+}
+export function cleanSubmission(b = {}, staff = false) {
+  const keep = (o, x) => (staff ? { ...x, paid: !!o.paid, given: !!o.given, no: str(o.no, 10) } : x);
+  const rooms = (Array.isArray(b.rooms) ? b.rooms : []).slice(0, 150).map((r) => keep(r, {
+    type: ROOM_TYPES.includes(r.type) ? r.type : 'ZBZ',
+    extra: num(r.extra, 0, 2), crib: !!r.crib,
+    people: (Array.isArray(r.people) ? r.people : []).slice(0, 8).map(cleanPerson),
+    payer: num(r.payer, 0, 7), invoice: !!r.invoice, inv: str(r.inv, 300), mail: str(r.mail, 120),
+  }));
+  const days = (Array.isArray(b.days) ? b.days : []).slice(0, 500).map((d) => keep(d, {
+    ...cleanPerson(d), invoice: !!d.invoice, inv: str(d.inv, 300), mail: str(d.mail, 120),
+  }));
+  const leader = { name: str(b.leader?.name, 80), phone: str(b.leader?.phone, 40), mail: str(b.leader?.mail, 120) };
+  const groupInv = { inv: str(b.groupInv?.inv, 300), mail: str(b.groupInv?.mail, 120) };
+  const out = { leader, rooms, days, groupInv };
+  if (staff) out.groupPay = { paid: !!b.groupPay?.paid, given: !!b.groupPay?.given };
+  return out;
+}
+
+export function summary(g) {
+  const s = g.submission || {};
+  return {
+    id: g.id, name: g.settings.name, in: g.settings.in, out: g.settings.out, status: g.settings.status,
+    paymode: g.settings.paymode, rooms: (s.rooms || []).length,
+    sleepers: (s.rooms || []).reduce((x, r) => x + r.people.length, 0), days: (s.days || []).length,
+    submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
+  };
+}
+export function pushAlert(g, text) {
+  g.alerts = g.alerts || [];
+  g.alerts.unshift({ at: new Date().toISOString(), text, seen: false });
+  g.alerts = g.alerts.slice(0, 50);
+}

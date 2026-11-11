@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Odalama Formu · Otel Global</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>Otel Global</h1><div class="muted" id="grpLine">Yükleniyor…</div></div>
+  </header>
+  <div id="err" class="card hidden"><h2>Form açılamadı</h2><p id="errMsg"></p><p class="note">Linki size gönderen otel çalışanıyla iletişime geçin.</p></div>
+  <main id="app" class="hidden" style="display:grid;gap:18px">
+    <div class="card">
+      <h2>Odalama ve katılımcı formu</h2>
+      <div id="intro" class="note"></div>
+      <div id="status"></div>
+      <div class="grid">
+        <label>Adınız<input id="f_name" autocomplete="name"></label>
+        <label>Telefon<input id="f_phone" placeholder="+49 …" autocomplete="tel"></label>
+        <label>E-posta<input type="email" id="f_mail" placeholder="ad@ornek.de" autocomplete="email"></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Konaklayanlar · odalar</h2><button type="button" class="btn small" id="addRoom">+ Oda ekle</button></div>
+      <p class="note">Her oda için oda tipini seçin ve odada kalacak kişileri yazın. 0–2 yaş bebekler yatak saymaz; bebek yatağı isteyebilirsiniz. Çocuk ücreti: 0–2 yaş ücretsiz · 3–7 yaş %50 · 8 yaş ve üstü tam ücret.</p>
+      <div id="rooms" style="display:grid;gap:12px"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Günübirlik katılımcılar</h2><button type="button" class="btn small" id="addDay">+ Kişi ekle</button></div>
+      <div id="days" style="display:grid;gap:8px"></div>
+    </div>
+    <div class="card"><h2>Ödeme ve fatura</h2><p class="note" id="invNote"></p><div id="inv" style="display:grid;gap:8px"></div></div>
+    <div class="row"><button type="button" class="btn" id="send">Formu gönder</button><span id="dirty" class="small muted"></span></div>
+    <p class="note">Gönderdikten sonra da bu linkten değişiklik yapabilirsiniz; her değişiklik otele iletilir. Kişisel bilgiler yalnız konaklamanızın düzenlenmesi ve faturalandırma için kullanılır.</p>
+  </main>
+</div>
+<script src="/common.js"></script>
+<script>
+const { $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, renderEditor, api } = HG;
+const token = new URLSearchParams(location.search).get("t") || "";
+let st, sub, submittedAt, dirty = false;
+const els = { rooms: $("rooms"), days: $("days"), inv: $("inv") };
+const markDirty = () => { dirty = true; $("dirty").textContent = "Gönderilmemiş değişiklik var."; };
+window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+function draw() {
+  $("grpLine").textContent = `${st.name} · ${dTR(st.in)} → ${dTR(st.out)} · ${nights(st)} gece`;
+  const left = daysLeft(st);
+  $("intro").innerHTML = `Sayın ${esc(st.leader || "grup sorumlusu")}, grubunuzun odalama ve katılımcı bilgilerini lütfen <b>en geç ${deadlineDate(st).toLocaleDateString("tr-TR")}</b> tarihine kadar doldurun${left >= 0 ? ` (${left} gün kaldı)` : ` <span class="chip crit">son tarih geçti</span>`}. Check-in 14:00, check-out 10:00. Resepsiyonumuz 24 saat hizmet verir.`;
+  $("status").innerHTML = submittedAt ? `<span class="chip ok">Son gönderim: ${esc(dtTR(submittedAt))}</span>` : `<span class="chip warn">Henüz gönderilmedi</span>`;
+  const priceTxt = `Konaklama ${eur(st.pNight)} / kişi / gece${st.pDay ? ` · günübirlik ${eur(st.pDay)} / kişi` : ""}${st.pSingle ? ` · tek kişilik oda farkı ${eur(st.pSingle)} / gece` : ""}.`;
+  $("invNote").textContent = (st.paymode === "kisi"
+    ? "Herkes kendi ücretini girişte öder. Fatura isteyenler bilgilerini burada bırakırsa fatura, çıkışı takip eden hafta içinde e-posta ile gönderilir. "
+    : "Grubun tamamı tek faturada toplanır. Fatura bilgilerini aşağıya yazın. ") + priceTxt;
+  renderEditor(els, st, sub, markDirty);
+}
+["name", "phone", "mail"].forEach((k) => { $("f_" + k).oninput = () => { sub.leader[k] = $("f_" + k).value; markDirty(); }; });
+$("addRoom").onclick = () => { sub.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
+$("addDay").onclick = () => { sub.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
+$("send").onclick = async () => {
+  $("send").disabled = true;
+  try {
+    const r = await api(`/api/form?t=${encodeURIComponent(token)}`, { method: "POST", body: sub });
+    sub = r.submission; submittedAt = r.submittedAt; dirty = false; $("dirty").textContent = "";
+    draw(); toast("Teşekkürler, bilgiler otele iletildi.");
+  } catch (e) { toast(e.message); } finally { $("send").disabled = false; }
+};
+(async () => {
+  try {
+    const r = await api(`/api/form?t=${encodeURIComponent(token)}`);
+    st = r.settings; sub = r.submission; submittedAt = r.submittedAt;
+    sub.leader = sub.leader || { name: "", phone: "", mail: "" };
+    ["name", "phone", "mail"].forEach((k) => ($("f_" + k).value = sub.leader[k] || ""));
+    $("app").classList.remove("hidden"); draw();
+  } catch (e) {
+    $("grpLine").textContent = ""; $("errMsg").textContent = e.message; $("err").classList.remove("hidden");
+  }
+})();
+</script>
+</body>
+</html>
