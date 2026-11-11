@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Otel Global · Grup Odalama ve Bilgi Raporu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: üstte sekmeler (Otel · Grup sorumlusu · Resepsiyon raporu), altında tek sütun form/rapor, 1000px */
+  --ink:#1b2733;--muted:#5b6876;--paper:#f4f6f5;--surface:#fff;--line:#d7dee2;
+  --accent:#0e6b6b;--accent-soft:#e1f0ef;--warn:#a35d00;--warn-soft:#fbefdc;--crit:#b3261e;--crit-soft:#fbe5e3;--ok:#1f7a3a;--ok-soft:#e3f3e7;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;--body:"Source Sans 3","Segoe UI",Arial,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.5 var(--body)}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px;display:grid;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.1;text-wrap:balance}
+h1{font-size:2rem}h2{font-size:1.45rem}h3{font-size:1.1rem}
+.top{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:end;justify-content:space-between;border-bottom:3px solid var(--ink);padding-bottom:12px}
+.proto{font-size:.85rem;background:var(--warn-soft);color:var(--warn);border-radius:6px;padding:6px 10px;font-weight:600}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{font:600 1rem var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:6px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:12px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+label{display:grid;gap:4px;font-size:.9rem;font-weight:600;color:var(--muted)}
+input,select{font:400 1rem var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:600 .95rem var(--body);border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:6px;padding:8px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:4px 10px;font-size:.85rem}
+.btn.danger{border-color:var(--crit);color:var(--crit);background:transparent}
+.room{border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:8px;padding:12px;display:grid;gap:10px}
+.room.bad{border-left-color:var(--crit)}
+.roomhead{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.roomhead>*{flex:1 1 140px}
+.person{display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.muted{color:var(--muted)}.small{font-size:.88rem}
+.chip{display:inline-block;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.crit{background:var(--crit-soft);color:var(--crit)}.chip.warn{background:var(--warn-soft);color:var(--warn)}.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.tile b{display:block;font-family:var(--display);font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.95rem;background:var(--surface)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--display);font-size:1rem;background:var(--accent-soft)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.paid td{background:var(--ok-soft)}
+.flags{display:grid;gap:8px}
+.flag{display:flex;gap:10px;align-items:start;padding:10px 12px;border-radius:6px}
+.flag.crit{background:var(--crit-soft)}.flag.warn{background:var(--warn-soft)}
+.hidden{display:none}
+.note{font-size:.9rem;color:var(--muted);max-width:70ch}
+@media (max-width:560px){.person{grid-template-columns:1fr 1fr}.person .btn{grid-column:span 2}}
+@media print{nav,.noprint{display:none!important}body{background:#fff}.card,.tile{border-color:#999}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="hotelName">Otel Global</h1>
+      <div class="muted" id="grpLine"></div>
+    </div>
+    <div class="proto">Prototip · veriler yalnız bu tarayıcıda saklanır, sunucuya gitmez</div>
+  </header>
+
+  <nav role="tablist" aria-label="Görünüm">
+    <button role="tab" id="tab-otel" aria-selected="false" data-view="otel">1 · Otel: grup ayarları</button>
+    <button role="tab" id="tab-form" aria-selected="true" data-view="form">2 · Grup sorumlusu: odalama formu</button>
+    <button role="tab" id="tab-rapor" aria-selected="false" data-view="rapor">3 · Resepsiyon: grup bilgi raporu</button>
+  </nav>
+
+  <!-- 1 OTEL -->
+  <section id="view-otel" class="hidden" aria-labelledby="tab-otel">
+    <div class="card">
+      <h2>Grup ayarları</h2>
+      <p class="note">Bu bölümü otel doldurur. Grup sorumlusu linki açtığında bu bilgileri görür, fiyatlar ve kurallar rapora otomatik işlenir.</p>
+      <div class="grid">
+        <label>Grup adı<input id="s_name"></label>
+        <label>Grup sorumlusu<input id="s_leader"></label>
+        <label>Geliş<input type="date" id="s_in"></label>
+        <label>Çıkış<input type="date" id="s_out"></label>
+        <label>Ödeme şekli<select id="s_paymode"><option value="kisi">Herkes kendisi öder</option><option value="grup">Grup tek fatura öder</option></select></label>
+        <label>Konaklama (€/kişi/gece)<input type="number" min="0" id="s_pNight"></label>
+        <label>Günübirlik (€/kişi/gün)<input type="number" min="0" id="s_pDay"></label>
+        <label>Tek kişilik oda farkı (€/kişi/gece)<input type="number" min="0" id="s_pSingle"></label>
+        <label>İsim–oda listesi son tarihi (gün önce)<input type="number" min="0" id="s_deadline"></label>
+      </div>
+      <p class="note">Çocuk ücreti otelin kuralına göre: 0–2 yaş ücretsiz · 3–7 yaş %50 · 8 yaş ve üstü tam ücret. Oda tipleri ve kapasiteler otelin envanterinden gelir: DBZ (3 kişilik) · DZ (çift kişilik) · EZ (tek kişilik) · ZBZ (2 yataklı) · SUP FAM (5 kişilik) · VBZ (4 yataklı).</p>
+      <div class="row noprint"><button class="btn ghost" id="resetDemo">Örnek veriye dön</button></div>
+    </div>
+  </section>
+
+  <!-- 2 FORM -->
+  <section id="view-form" aria-labelledby="tab-form" style="display:grid;gap:18px">
+    <div class="card">
+      <h2>Odalama ve katılımcı formu</h2>
+      <div id="formIntro" class="note"></div>
+      <div class="grid">
+        <label>Sizin adınız<input id="f_leader"></label>
+        <label>Telefon<input id="f_phone" placeholder="+49 …"></label>
+        <label>E-posta<input type="email" id="f_mail" placeholder="ad@ornek.de"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Konaklayanlar · odalar</h2><button class="btn small noprint" id="addRoom">+ Oda ekle</button></div>
+      <p class="note">Her oda için oda tipini seçin ve odada kalacak kişileri yazın. 0–2 yaş bebekler yatak saymaz; bebek yatağı isteyebilirsiniz.</p>
+      <div id="rooms" style="display:grid;gap:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Günübirlik katılımcılar</h2><button class="btn small noprint" id="addDay">+ Kişi ekle</button></div>
+      <div id="days" style="display:grid;gap:8px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Fatura</h2>
+      <p class="note" id="invoiceNote"></p>
+      <div id="invoices" style="display:grid;gap:8px"></div>
+    </div>
+
+    <div class="row noprint"><button class="btn" id="submitForm">Formu gönder</button><span id="submitMsg" class="small muted"></span></div>
+  </section>
+
+  <!-- 3 RAPOR -->
+  <section id="view-rapor" class="hidden" aria-labelledby="tab-rapor" style="display:grid;gap:18px">
+    <div class="row" style="justify-content:space-between"><h2 id="repTitle">Grup bilgi raporu</h2><button class="btn ghost small noprint" id="printBtn">Yazdır</button></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="card"><h3>Tekrar görüşülecekler</h3><div class="flags" id="flags"></div></div>
+    <div class="card"><h3>Tahsilat listesi · kimden ne alınacak</h3>
+      <div class="tablewrap"><table id="payTable"></table></div>
+      <p class="note">"Ödendi" ve "Kart / kaşeli kâğıt" işaretleri resepsiyonun kendi kaydıdır. Canlı sürümde açık kalan hesap çıkışta yöneticiye otomatik bildirilecek.</p>
+    </div>
+    <div class="card"><h3>Odalama listesi</h3><div class="tablewrap"><table id="roomTable"></table></div></div>
+  </section>
+</div>
+
+<script>
+const ROOMTYPES={"EZ":{label:"EZ (tek kişilik)",beds:1,stock:6},"DZ":{label:"DZ (çift kişilik)",beds:2,stock:2},"ZBZ":{label:"ZBZ (2 yataklı)",beds:2,stock:57},"DBZ":{label:"DBZ (3 kişilik)",beds:3,stock:2},"VBZ":{label:"VBZ (4 yataklı)",beds:4,stock:6},"SUP FAM":{label:"SUP FAM (5 kişilik)",beds:5,stock:2}};
+const AGES={"Y":{label:"Yetişkin",f:1,bed:true},"C8":{label:"Çocuk 8 yaş ve üstü",f:1,bed:true},"C3":{label:"Çocuk 3–7 yaş",f:.5,bed:true},"C0":{label:"Çocuk 0–2 yaş",f:0,bed:false}};
+const EXTRA_BEDS=32, KEY="otelglobal_proto_v1";
+const DEMO={
+  settings:{name:"Mühendisler Mimarlar Çalıştayı (örnek)",leader:"Ali Bey",in:"2026-12-05",out:"2026-12-06",paymode:"kisi",pNight:100,pDay:35,pSingle:15,deadline:3},
+  leader:{name:"Ali Bey",phone:"",mail:""},
+  rooms:[
+    {type:"ZBZ",no:"",crib:false,extra:0,people:[{n:"Örnek Kişi 1",a:"Y"},{n:"Örnek Kişi 2",a:"Y"}],payer:0,invoice:true,inv:"Örnek Mühendislik GmbH, Musterstr. 1, 60311 Frankfurt",mail:"ornek1@example.de",paid:false,given:false},
+    {type:"VBZ",no:"",crib:true,extra:0,people:[{n:"Örnek Kişi 3",a:"Y"},{n:"Örnek Kişi 4",a:"Y"},{n:"Örnek Çocuk 1",a:"C3"},{n:"Örnek Çocuk 2",a:"C8"},{n:"Örnek Bebek",a:"C0"}],payer:0,invoice:false,inv:"",mail:"ornek3@example.de",paid:false,given:false},
+    {type:"EZ",no:"",crib:false,extra:0,people:[{n:"Örnek Kişi 5",a:"Y"}],payer:0,invoice:true,inv:"",mail:"",paid:false,given:false},
+    {type:"DZ",no:"",crib:false,extra:0,people:[{n:"Örnek Kişi 6",a:"Y"},{n:"Örnek Kişi 7",a:"Y"},{n:"Örnek Kişi 8",a:"Y"}],payer:0,invoice:false,inv:"",mail:"ornek6@example.de",paid:false,given:false}
+  ],
+  days:[
+    {n:"Örnek Günübirlik 1",a:"Y",invoice:true,inv:"",mail:"g1@example.de",paid:false,given:false},
+    {n:"Örnek Günübirlik 2",a:"Y",invoice:false,inv:"",mail:"",paid:false,given:false},
+    {n:"Örnek Günübirlik 3",a:"C3",invoice:false,inv:"",mail:"",paid:false,given:false}
+  ],
+  submitted:null
+};
+let S;
+function load(){try{const r=localStorage.getItem(KEY);S=r?JSON.parse(r):structuredClone(DEMO)}catch(e){S=structuredClone(DEMO)}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const eur=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2}).format(n);
+const dTR=s=>{if(!s)return"—";const d=new Date(s+"T12:00:00");return d.toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric",weekday:"long"})};
+function nights(){const a=new Date(S.settings.in+"T12:00:00"),b=new Date(S.settings.out+"T12:00:00");return Math.max(0,Math.round((b-a)/864e5))}
+function deadlineDate(){const d=new Date(S.settings.in+"T12:00:00");d.setDate(d.getDate()-Number(S.settings.deadline||0));return d}
+function daysLeft(){const t=new Date();t.setHours(12,0,0,0);return Math.round((deadlineDate()-t)/864e5)}
+
+/* ---------- views ---------- */
+function show(v){for(const b of document.querySelectorAll("nav button")){const on=b.dataset.view===v;b.setAttribute("aria-selected",on);$("view-"+b.dataset.view).classList.toggle("hidden",!on);$("view-"+b.dataset.view).style.display=on?"grid":"none"}if(v==="rapor")renderReport();try{history.replaceState(null,"","#"+v)}catch(e){}}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>show(b.dataset.view));
+
+function header(){
+  $("grpLine").textContent=`${S.settings.name} · ${dTR(S.settings.in)} → ${dTR(S.settings.out)} · ${nights()} gece`;
+  const left=daysLeft();
+  $("formIntro").innerHTML=`Sayın ${esc(S.settings.leader)}, grubunuzun odalama ve katılımcı bilgilerini lütfen <b>en geç ${deadlineDate().toLocaleDateString("tr-TR")}</b> tarihine kadar doldurun${left>=0?` (${left} gün kaldı)`:` <span class="chip crit">son tarih geçti</span>`}. Check-in 14:00, check-out 10:00. Resepsiyonumuz 24 saat hizmet verir.`;
+  $("invoiceNote").textContent=S.settings.paymode==="kisi"
+    ?"Herkes kendi ücretini öder. Fatura isteyenler bilgilerini burada bırakırsa fatura, çıkışı takip eden hafta içinde e-posta ile gönderilir."
+    :"Grubun tamamı tek faturada toplanır. Fatura bilgilerini aşağıya yazın.";
+}
+
+/* ---------- settings ---------- */
+const SF=["name","leader","in","out","paymode","pNight","pDay","pSingle","deadline"];
+function renderSettings(){SF.forEach(k=>{const el=$("s_"+k);el.value=S.settings[k];el.oninput=el.onchange=()=>{S.settings[k]=el.type==="number"?Number(el.value):el.value;save();header();renderInvoices()}})}
+$("resetDemo").onclick=()=>{S=structuredClone(DEMO);save();renderAll()};
+
+/* ---------- form ---------- */
+function ageSel(v,on){const s=document.createElement("select");for(const k in AGES){const o=document.createElement("option");o.value=k;o.textContent=AGES[k].label;if(k===v)o.selected=true;s.appendChild(o)}s.onchange=()=>on(s.value);return s}
+function inp(v,ph,on,type){const i=document.createElement("input");i.value=v??"";if(ph)i.placeholder=ph;if(type)i.type=type;i.oninput=()=>on(i.value);return i}
+function renderRooms(){
+  const box=$("rooms");box.innerHTML="";
+  S.rooms.forEach((r,ri)=>{
+    const d=document.createElement("div");d.className="room";
+    const cap=ROOMTYPES[r.type].beds+Number(r.extra||0);
+    const need=r.people.filter(p=>AGES[p.a].bed).length;
+    if(need>cap)d.classList.add("bad");
+    const h=document.createElement("div");h.className="roomhead";
+    const tl=document.createElement("label");tl.textContent=`Oda ${ri+1} · oda tipi`;
+    const ts=document.createElement("select");for(const k in ROOMTYPES){const o=document.createElement("option");o.value=k;o.textContent=ROOMTYPES[k].label;if(k===r.type)o.selected=true;ts.appendChild(o)}
+    ts.onchange=()=>{r.type=ts.value;save();renderRooms()};tl.appendChild(ts);
+    const el=document.createElement("label");el.textContent="Ek yatak";const es=document.createElement("select");[0,1,2].forEach(n=>{const o=document.createElement("option");o.value=n;o.textContent=n;if(n==r.extra)o.selected=true;es.appendChild(o)});es.onchange=()=>{r.extra=Number(es.value);save();renderRooms()};el.appendChild(es);
+    const cl=document.createElement("label");cl.textContent="Bebek yatağı";const cs=document.createElement("select");[["Hayır",false],["Evet",true]].forEach(([t,v])=>{const o=document.createElement("option");o.value=v;o.textContent=t;if(v===r.crib)o.selected=true;cs.appendChild(o)});cs.onchange=()=>{r.crib=cs.value==="true";save()};cl.appendChild(cs);
+    const st=document.createElement("div");st.className="small";st.innerHTML=need>cap?`<span class="chip crit">${need} kişi / ${cap} yatak · kapasite aşıldı</span>`:`<span class="chip ok">${need} kişi / ${cap} yatak</span>`;
+    h.append(tl,el,cl,st);d.appendChild(h);
+    r.people.forEach((p,pi)=>{
+      const row=document.createElement("div");row.className="person";
+      const del=document.createElement("button");del.className="btn danger small";del.textContent="Sil";del.onclick=()=>{r.people.splice(pi,1);if(r.payer>=r.people.length)r.payer=0;save();renderRooms();renderInvoices()};
+      row.append(inp(p.n,"Ad Soyad",v=>{p.n=v;save();renderInvoices()}),ageSel(p.a,v=>{p.a=v;save();renderRooms()}),del);d.appendChild(row)
+    });
+    const act=document.createElement("div");act.className="row noprint";
+    const add=document.createElement("button");add.className="btn ghost small";add.textContent="+ Kişi";add.onclick=()=>{r.people.push({n:"",a:"Y"});save();renderRooms();renderInvoices()};
+    const rm=document.createElement("button");rm.className="btn danger small";rm.textContent="Odayı sil";rm.onclick=()=>{S.rooms.splice(ri,1);save();renderRooms();renderInvoices()};
+    act.append(add,rm);d.appendChild(act);box.appendChild(d)
+  });
+}
+$("addRoom").onclick=()=>{S.rooms.push({type:"ZBZ",no:"",crib:false,extra:0,people:[{n:"",a:"Y"}],payer:0,invoice:false,inv:"",mail:"",paid:false,given:false});save();renderRooms();renderInvoices()};
+function renderDays(){
+  const box=$("days");box.innerHTML="";
+  if(!S.days.length)box.innerHTML='<p class="note">Günübirlik katılımcı yok.</p>';
+  S.days.forEach((p,i)=>{const row=document.createElement("div");row.className="person";
+    const del=document.createElement("button");del.className="btn danger small";del.textContent="Sil";del.onclick=()=>{S.days.splice(i,1);save();renderDays();renderInvoices()};
+    row.append(inp(p.n,"Ad Soyad",v=>{p.n=v;save();renderInvoices()}),ageSel(p.a,v=>{p.a=v;save()}),del);box.appendChild(row)});
+}
+$("addDay").onclick=()=>{S.days.push({n:"",a:"Y",invoice:false,inv:"",mail:"",paid:false,given:false});save();renderDays();renderInvoices()};
+function renderInvoices(){
+  const box=$("invoices");box.innerHTML="";
+  if(S.settings.paymode==="grup"){
+    S.groupInv=S.groupInv||{inv:"",mail:""};
+    const g=document.createElement("div");g.className="grid";
+    const a=document.createElement("label");a.textContent="Fatura adı ve adresi (posta kodu 5 hane)";a.appendChild(inp(S.groupInv.inv,"Ad / firma, cadde no, PLZ şehir",v=>{S.groupInv.inv=v;save()}));
+    const b=document.createElement("label");b.textContent="Faturanın gideceği e-posta";b.appendChild(inp(S.groupInv.mail,"ad@ornek.de",v=>{S.groupInv.mail=v;save()},"email"));
+    g.append(a,b);box.appendChild(g);return;
+  }
+  const payers=[...S.rooms.map((r,i)=>({o:r,label:`Oda ${i+1} · ödeyen`,room:true})),...S.days.map(d=>({o:d,label:"Günübirlik"}))];
+  payers.forEach(({o,label,room})=>{
+    const card=document.createElement("div");card.className="room";card.style.borderLeftColor="var(--line)";
+    const g=document.createElement("div");g.className="grid";
+    if(room){const l=document.createElement("label");l.textContent=label;const s=document.createElement("select");o.people.forEach((p,i)=>{const op=document.createElement("option");op.value=i;op.textContent=p.n||`Kişi ${i+1}`;if(i===o.payer)op.selected=true;s.appendChild(op)});s.onchange=()=>{o.payer=Number(s.value);save()};l.appendChild(s);g.appendChild(l)}
+    else{const l=document.createElement("label");l.textContent=label;const x=document.createElement("input");x.value=o.n||"(ad yok)";x.disabled=true;l.appendChild(x);g.appendChild(l)}
+    const m=document.createElement("label");m.textContent="E-posta (fatura için)";m.appendChild(inp(o.mail,"ad@ornek.de",v=>{o.mail=v;save()},"email"));
+    const f=document.createElement("label");f.textContent="Fatura istiyor mu?";const fs=document.createElement("select");[["Hayır",false],["Evet",true]].forEach(([t,v])=>{const op=document.createElement("option");op.value=v;op.textContent=t;if(v===o.invoice)op.selected=true;fs.appendChild(op)});fs.onchange=()=>{o.invoice=fs.value==="true";save();renderInvoices()};f.appendChild(fs);
+    g.append(m,f);
+    if(o.invoice){const a=document.createElement("label");a.textContent="Fatura adı ve adresi";a.appendChild(inp(o.inv,"Ad / firma, cadde no, PLZ şehir",v=>{o.inv=v;save()}));g.appendChild(a)}
+    card.appendChild(g);box.appendChild(card)
+  });
+}
+function renderLeader(){[["name","f_leader"],["phone","f_phone"],["mail","f_mail"]].forEach(([k,id])=>{const el=$(id);el.value=S.leader[k]||"";el.oninput=()=>{S.leader[k]=el.value;save()}})}
+$("submitForm").onclick=()=>{S.submitted=new Date().toISOString();save();$("submitMsg").textContent="Gönderildi (prototip: kayıt yalnız bu tarayıcıda). Resepsiyon raporu güncellendi.";show("rapor")};
+
+/* ---------- pricing & report ---------- */
+function personPrice(a,isDay){const s=S.settings;return isDay?s.pDay*AGES[a].f:s.pNight*nights()*AGES[a].f}
+function roomPrice(r){let t=r.people.reduce((x,p)=>x+personPrice(p.a,false),0);const sleepers=r.people.filter(p=>AGES[p.a].bed).length;let single=0;if(sleepers===1&&r.people.length===1)single=S.settings.pSingle*nights();return{base:t,single,total:t+single}}
+function flags(){
+  const F=[];const n=nights();
+  if(n<=0)F.push(["crit","Tarihler hatalı: çıkış gelişten sonra olmalı."]);
+  if(!S.submitted){const l=daysLeft();F.push([l<0?"crit":"warn",l<0?"Odalama formu gelmedi ve son tarih geçti. Grup sorumlusu hemen aranmalı.":`Odalama formu henüz gönderilmedi. Son tarihe ${l} gün var.`])}
+  if(!S.leader.phone)F.push(["warn","Grup sorumlusunun telefonu yok."]);
+  if(!S.leader.mail)F.push(["warn","Grup sorumlusunun e-postası yok."]);
+  const cnt={};S.rooms.forEach((r,i)=>{cnt[r.type]=(cnt[r.type]||0)+1;const cap=ROOMTYPES[r.type].beds+Number(r.extra||0);const need=r.people.filter(p=>AGES[p.a].bed).length;
+    if(need>cap)F.push(["crit",`Oda ${i+1} (${r.type}): ${need} kişi, ${cap} yatak. Daha büyük oda ya da ek yatak gerekli.`]);
+    if(r.people.some(p=>!p.n.trim()))F.push(["warn",`Oda ${i+1}: adı yazılmamış kişi var.`]);
+    if(r.people.some(p=>p.a==="C0")&&!r.crib)F.push(["warn",`Oda ${i+1}: 0–2 yaş bebek var, bebek yatağı istenmemiş. Sorulmalı.`]);});
+  for(const t in cnt)if(cnt[t]>ROOMTYPES[t].stock)F.push(["crit",`${t}: ${cnt[t]} oda istendi, otelde ${ROOMTYPES[t].stock} var.`]);
+  const extras=S.rooms.reduce((x,r)=>x+Number(r.extra||0),0);if(extras>EXTRA_BEDS)F.push(["crit",`Ek yatak: ${extras} istendi, otelde ${EXTRA_BEDS} var.`]);
+  if(S.settings.paymode==="kisi"){
+    S.rooms.forEach((r,i)=>{if(r.invoice&&!r.inv.trim())F.push(["warn",`Oda ${i+1}: fatura istendi ama fatura bilgisi yok.`]);if(r.invoice&&!r.mail.trim())F.push(["warn",`Oda ${i+1}: fatura istendi ama e-posta yok; fatura gönderilemez.`])});
+    S.days.forEach(d=>{if(d.invoice&&(!d.inv.trim()||!d.mail.trim()))F.push(["warn",`Günübirlik ${d.n||"(ad yok)"}: fatura bilgisi veya e-posta eksik.`])});
+  }else{const g=S.groupInv||{};if(!g.inv)F.push(["warn","Grup faturası için fatura bilgisi yok."]);else if(!/\b\d{5}\b/.test(g.inv))F.push(["warn","Fatura adresinde 5 haneli posta kodu görünmüyor."]);}
+  const unpaid=collectRows().filter(r=>!r.o.paid&&r.amount>0);
+  if(S.submitted&&unpaid.length)F.push(["warn",`${unpaid.length} hesap henüz ödenmedi (${eur(unpaid.reduce((x,r)=>x+r.amount,0))}). Çıkışta açık kalırsa yöneticiye bildirilecek.`]);
+  return F;
+}
+function collectRows(){
+  if(S.settings.paymode==="grup"){const tot=S.rooms.reduce((x,r)=>x+roomPrice(r).total,0)+S.days.reduce((x,d)=>x+personPrice(d.a,true),0);S.groupPay=S.groupPay||{paid:false,given:false};return[{who:S.settings.leader+" (grup)",what:"Grubun tamamı",amount:tot,o:S.groupPay,inv:!!(S.groupInv&&S.groupInv.inv),mail:(S.groupInv||{}).mail||"",give:"Fatura"}]}
+  const rows=[];
+  S.rooms.forEach((r,i)=>{const p=roomPrice(r);const payer=r.people[r.payer]||{};rows.push({who:payer.n||`Oda ${i+1}`,what:`Oda ${i+1} · ${r.type} · ${r.people.length} kişi`+(p.single?` · tek kişilik farkı ${eur(p.single)}`:""),amount:p.total,o:r,inv:r.invoice,mail:r.mail,give:"Oda kartı"})});
+  S.days.forEach(d=>rows.push({who:d.n||"(ad yok)",what:`Günübirlik · ${AGES[d.a].label}`,amount:personPrice(d.a,true),o:d,inv:d.invoice,mail:d.mail,give:"Kaşeli kâğıt"}));
+  return rows;
+}
+function renderReport(){
+  $("repTitle").textContent=`Grup bilgi raporu · ${S.settings.name}`;
+  const n=nights();const sleepers=S.rooms.reduce((x,r)=>x+r.people.length,0);const rows=collectRows();
+  const total=rows.reduce((x,r)=>x+r.amount,0);const paid=rows.filter(r=>r.o.paid).reduce((x,r)=>x+r.amount,0);
+  const types={};S.rooms.forEach(r=>types[r.type]=(types[r.type]||0)+1);
+  const F=flags();
+  $("tiles").innerHTML=[
+    ["Konaklayan",sleepers,`${S.rooms.length} oda · ${n} gece`],
+    ["Günübirlik",S.days.length,`${eur(S.settings.pDay)} / kişi`],
+    ["Beklenen tahsilat",eur(total),S.settings.paymode==="kisi"?"herkes kendisi öder":"grup tek fatura"],
+    ["Tahsil edilen",eur(paid),`kalan ${eur(total-paid)}`],
+    ["Açık konu",F.length,F.some(f=>f[0]==="crit")?"kritik var":"uyarı"]
+  ].map(([a,b,c])=>`<div class="tile"><span class="small muted">${a}</span><b>${b}</b><span class="small muted">${c}</span></div>`).join("");
+  $("flags").innerHTML=F.length?F.map(([k,t])=>`<div class="flag ${k}"><span class="chip ${k}">${k==="crit"?"Kritik":"Uyarı"}</span><span>${esc(t)}</span></div>`).join(""):'<span class="chip ok">Açık konu yok</span>';
+  const t=$("payTable");
+  t.innerHTML=`<thead><tr><th>Ödeyen</th><th>Kapsam</th><th class="num">Tutar</th><th>Verilecek</th><th>Fatura</th><th>Ödendi</th><th>Verildi</th></tr></thead><tbody>${rows.map((r,i)=>`<tr class="${r.o.paid?"paid":""}"><td>${esc(r.who)}</td><td class="small">${esc(r.what)}</td><td class="num">${eur(r.amount)}</td><td class="small">${r.give}</td><td class="small">${r.inv?(r.mail?"Evet · e-posta":"Evet · <span class='chip warn'>e-posta yok</span>"):"Hayır"}</td><td><input type="checkbox" data-i="${i}" data-k="paid" ${r.o.paid?"checked":""} aria-label="Ödendi"></td><td><input type="checkbox" data-i="${i}" data-k="given" ${r.o.given?"checked":""} aria-label="Verildi"></td></tr>`).join("")}<tr><td colspan="2"><b>Toplam</b></td><td class="num"><b>${eur(total)}</b></td><td colspan="4"></td></tr></tbody>`;
+  t.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.onchange=()=>{rows[cb.dataset.i].o[cb.dataset.k]=cb.checked;save();renderReport()});
+  $("roomTable").innerHTML=`<thead><tr><th>Oda</th><th>Tip</th><th>Misafirler</th><th class="num">Yatak</th><th>Ek / bebek yatağı</th></tr></thead><tbody>${S.rooms.map((r,i)=>{const cap=ROOMTYPES[r.type].beds+Number(r.extra||0);const need=r.people.filter(p=>AGES[p.a].bed).length;return`<tr><td>Oda ${i+1}</td><td>${r.type}</td><td class="small">${r.people.map(p=>esc(p.n||"(ad yok)")+` <span class="muted">(${AGES[p.a].label})</span>`).join("<br>")}</td><td class="num">${need} / ${cap}${need>cap?' <span class="chip crit">aşım</span>':""}</td><td class="small">${r.extra?r.extra+" ek yatak":""}${r.extra&&r.crib?" · ":""}${r.crib?"bebek yatağı":""}</td></tr>`}).join("")}</tbody>`;
+}
+$("printBtn").onclick=()=>{try{window.print()}catch(e){}};
+
+function renderAll(){header();renderSettings();renderLeader();renderRooms();renderDays();renderInvoices();renderReport()}
+load();renderAll();
+const h=(location.hash||"").slice(1);show(["otel","form","rapor"].includes(h)?h:"form");
+</script>
+</body>
+</html>
