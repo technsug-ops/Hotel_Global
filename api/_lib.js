@@ -151,3 +151,15 @@ export function roomingDeadline(settings) {
   return d;
 }
 export const describe = (sub) => `${sub.rooms.length} oda, ${sub.rooms.reduce((x, r) => x + r.people.length, 0)} konaklayan, ${sub.days.length} günübirlik`;
+
+const BEDS = { EZ: 1, DZ: 2, ZBZ: 2, DBZ: 3, VBZ: 4, 'SUP FAM': 5 };
+export function capacityErrors(sub) {
+  const out = [];
+  sub.rooms.forEach((r, i) => {
+    const need = r.people.filter((p) => p.a !== 'C0').length, cap = BEDS[r.type] + (r.extra || 0);
+    const babies = r.people.length - need;
+    if (need > cap) out.push(`Oda ${i + 1} (${r.type}): ${need} kişi, ${cap} yatak`);
+    if (babies > 2) out.push(`Oda ${i + 1}: en fazla 2 bebek (0–2 yaş)`);
+  });
+  return out;
+}

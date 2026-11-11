@@ -112,6 +112,14 @@ const HG = (() => {
   const yesNo = [["false", "Hayır"], ["true", "Evet"]];
   function labeled(text, el) { const l = document.createElement("label"); l.textContent = text; l.appendChild(el); return l; }
 
+  const roomCap = (r, type = r.type, extra = r.extra) => ROOMTYPES[type].beds + Number(extra || 0);
+  const bedNeed = (people) => people.filter((p) => AGES[p.a].bed).length;
+  function capacityErrors(sub) {
+    const out = [];
+    sub.rooms.forEach((r, i) => { const n = bedNeed(r.people), c = roomCap(r); if (n > c) out.push(`Oda ${i + 1} (${r.type}): ${n} kişi, ${c} yatak`); });
+    return out;
+  }
+  const FULL = (r) => `Bu oda dolu (${roomCap(r)} yatak). Daha büyük bir oda tipi seçin, ek yatak ekleyin veya yeni oda açın.`;
   function renderEditor(els, st, sub, onChange, opts = {}) {
     const redraw = () => renderEditor(els, st, sub, onChange, opts);
     const changed = (full) => { onChange(); if (full) redraw(); };
@@ -124,24 +132,35 @@ const HG = (() => {
       if (need > cap) d.classList.add("bad");
       const h = document.createElement("div"); h.className = "roomhead";
       h.append(
-        labeled(`Oda ${ri + 1} · oda tipi`, select(Object.entries(ROOMTYPES).map(([k, t]) => [k, t.label]), r.type, (v) => { r.type = v; changed(true); })),
-        labeled("Ek yatak", select([[0, "0"], [1, "1"], [2, "2"]], r.extra || 0, (v) => { r.extra = Number(v); changed(true); })),
+        labeled(`Oda ${ri + 1} · oda tipi`, select(Object.entries(ROOMTYPES).map(([k, t]) => [k, t.label]), r.type, (v) => {
+          if (bedNeed(r.people) > roomCap(r, v)) { toast(`${ROOMTYPES[v].label} bu odadaki ${bedNeed(r.people)} kişiye yetmez.`); return redraw(); }
+          r.type = v; changed(true); })),
+        labeled("Ek yatak", select([[0, "0"], [1, "1"], [2, "2"]], r.extra || 0, (v) => {
+          if (bedNeed(r.people) > roomCap(r, r.type, v)) { toast(`Ek yatak azaltılamaz: odada ${bedNeed(r.people)} kişi var.`); return redraw(); }
+          r.extra = Number(v); changed(true); })),
         labeled("Bebek yatağı", select(yesNo, String(!!r.crib), (v) => { r.crib = v === "true"; changed(false); })),
       );
       if (opts.staff) h.append(labeled("Oda no (otel)", input(r.no, "ör. 214", (v) => { r.no = v; changed(false); })));
       const stc = document.createElement("div"); stc.className = "small";
-      stc.innerHTML = need > cap ? `<span class="chip crit">${need} kişi / ${cap} yatak · kapasite aşıldı</span>` : `<span class="chip ok">${need} kişi / ${cap} yatak</span>`;
+      stc.innerHTML = need > cap ? `<span class="chip crit">${need} kişi / ${cap} yatak · kapasite aşıldı, fazla kişiyi silin</span>` : need === cap ? `<span class="chip warn">${need} / ${cap} yatak · oda dolu</span>` : `<span class="chip ok">${need} kişi / ${cap} yatak</span>`;
       h.append(stc); d.appendChild(h);
       r.people.forEach((p, pi) => {
         const row = document.createElement("div"); row.className = "person";
         const del = document.createElement("button"); del.type = "button"; del.className = "btn danger small"; del.textContent = "Sil";
         del.onclick = () => { r.people.splice(pi, 1); if (r.payer >= r.people.length) r.payer = 0; changed(true); };
-        row.append(input(p.n, "Ad Soyad", (v) => { p.n = v; changed(false); }, null, `Oda ${ri + 1} kişi ${pi + 1} ad soyad`), select(ageOpts, p.a, (v) => { p.a = v; changed(true); }), del);
+        row.append(input(p.n, "Ad Soyad", (v) => { p.n = v; changed(false); }, null, `Oda ${ri + 1} kişi ${pi + 1} ad soyad`), select(ageOpts, p.a, (v) => {
+          const others = bedNeed(r.people.filter((_, k) => k !== pi));
+          if (AGES[v].bed && others + 1 > roomCap(r)) { toast(FULL(r)); return redraw(); }
+          p.a = v; changed(true); }), del);
         d.appendChild(row);
       });
       const act = document.createElement("div"); act.className = "row";
       const add = document.createElement("button"); add.type = "button"; add.className = "btn ghost small"; add.textContent = "+ Kişi";
-      add.onclick = () => { if (r.people.length < 8) { r.people.push({ n: "", a: "Y" }); changed(true); } };
+      const full = bedNeed(r.people) >= roomCap(r);
+      add.onclick = () => {
+        if (full) { const babies = r.people.filter((p) => p.a === "C0").length; if (babies >= 2) return toast(FULL(r)); r.people.push({ n: "", a: "C0" }); toast("Oda dolu: yalnız 0–2 yaş bebek eklenebilir (yatak gerekmez)."); return changed(true); }
+        if (r.people.length < 8) { r.people.push({ n: "", a: "Y" }); changed(true); } };
+      if (full) add.textContent = "+ Bebek (0–2)";
       const rm = document.createElement("button"); rm.type = "button"; rm.className = "btn danger small"; rm.textContent = "Odayı sil";
       rm.onclick = () => { sub.rooms.splice(ri, 1); changed(true); };
       act.append(add, rm); d.appendChild(act); els.rooms.appendChild(d);
@@ -205,5 +224,5 @@ const HG = (() => {
     return data;
   }
 
-  return { confirmInfo, fmt, ROOMTYPES, AGES, $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, collectRows, flags, renderEditor, renderReport, api };
+  return { capacityErrors, confirmInfo, fmt, ROOMTYPES, AGES, $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, collectRows, flags, renderEditor, renderReport, api };
 })();

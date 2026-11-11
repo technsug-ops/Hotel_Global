@@ -1,4 +1,4 @@
-import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, mergeSubmission, roomingDeadline, describe } from './_lib.js';
+import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, mergeSubmission, roomingDeadline, describe, capacityErrors } from './_lib.js';
 
 async function load(token) {
   if (!isId(token)) return null;
@@ -27,6 +27,8 @@ export default async function handler(req, res) {
 
     const now = new Date(), nowIso = now.toISOString();
     const incoming = cleanSubmission(req.body || {});
+    const capErr = capacityErrors(incoming);
+    if (capErr.length) return res.status(400).json({ error: `Oda kapasitesi aşıldı: ${capErr.join('; ')}. Fazla kişiyi başka odaya alın veya daha büyük oda seçin.` });
     const text = describe(incoming);
     if (deadline && now > deadline) {
       // son tarih geçti: değişiklik otel onayına kadar bekler

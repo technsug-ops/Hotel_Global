@@ -68,6 +68,8 @@ function draw() {
 $("addRoom").onclick = () => { sub.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
 $("addDay").onclick = () => { sub.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
 $("send").onclick = async () => {
+  const ce = HG.capacityErrors(sub);
+  if (ce.length) return toast("Kapasite aşıldı: " + ce.join("; ") + ". Fazla kişiyi silin veya oda tipini büyütün.");
   $("send").disabled = true;
   try {
     const r = await api(`/api/form?t=${encodeURIComponent(token)}`, { method: "POST", body: sub });
