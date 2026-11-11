@@ -88,6 +88,8 @@ export function cleanSettings(s = {}) {
     in: date(s.in), out: date(s.out), paymode: s.paymode === 'grup' ? 'grup' : 'kisi',
     pNight: num(s.pNight), pDay: num(s.pDay), pSingle: num(s.pSingle), deadline: num(s.deadline, 0, 60),
     salon: str(s.salon, 80), notes: str(s.notes, 1000),
+    confirmDays: s.confirmDays === undefined || s.confirmDays === '' ? 7 : num(s.confirmDays, 0, 120),
+    callDays: s.callDays === undefined || s.callDays === '' ? 3 : num(s.callDays, 0, 60),
     status: ['Teklif', 'Opsiyon', 'Kesin', 'İptal'].includes(s.status) ? s.status : 'Opsiyon',
   };
 }
@@ -119,10 +121,17 @@ export function summary(g) {
     paymode: g.settings.paymode, rooms: (s.rooms || []).length,
     sleepers: (s.rooms || []).reduce((x, r) => x + r.people.length, 0), days: (s.days || []).length,
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
+    confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
+    confirmedAt: g.confirmedAt || null, lastCall: (g.calls || [])[0] || null, leader: g.settings.leader, phone: g.settings.phone,
   };
 }
 export function pushAlert(g, text) {
   g.alerts = g.alerts || [];
   g.alerts.unshift({ at: new Date().toISOString(), text, seen: false });
   g.alerts = g.alerts.slice(0, 50);
+}
+
+export const CALL_RESULTS = ['Kesinleşti', 'Değişiklik var', 'Ulaşılamadı', 'Tekrar aranacak', 'İptal'];
+export function cleanCall(c = {}) {
+  return { result: CALL_RESULTS.includes(c.result) ? c.result : 'Tekrar aranacak', note: str(c.note, 500), by: str(c.by, 60) };
 }

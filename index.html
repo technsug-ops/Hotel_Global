@@ -29,6 +29,11 @@
 
   <!-- liste -->
   <section id="v-list" class="hidden" style="display:grid;gap:18px">
+    <div class="card" id="todayCard">
+      <h2>Aranacak gruplar · teyit</h2>
+      <p class="note">Kesinleşme son tarihi yaklaşan veya geçen, henüz kesinleşmemiş gruplar. Arama sonucu grubun "Grup bilgi raporu" sekmesinden kaydedilir.</p>
+      <div id="todayList" class="glist"></div>
+    </div>
     <div class="card">
       <h2>Yeni grup kaydı</h2>
       <form id="newForm" class="grid">
@@ -63,6 +68,17 @@
     </nav>
 
     <div id="t-rapor" style="display:grid;gap:18px">
+      <div class="card" id="callCard">
+        <div class="row" style="justify-content:space-between"><h3>Teyit ve kesinleşme</h3><span id="callStage"></span></div>
+        <div id="callInfo" class="small"></div>
+        <div class="grid">
+          <label>Arayan<input id="c_by" placeholder="Adınız"></label>
+          <label>Sonuç<select id="c_result"><option>Kesinleşti</option><option>Değişiklik var</option><option>Ulaşılamadı</option><option>Tekrar aranacak</option><option>İptal</option></select></label>
+          <label>Not<input id="c_note" placeholder="ör. kişi sayısı 34 → 36, salon teyit edildi"></label>
+          <div style="align-self:end"><button type="button" class="btn" id="saveCall">Aramayı kaydet</button></div>
+        </div>
+        <div class="tablewrap"><table id="callTable"></table></div>
+      </div>
       <div class="tiles" id="tiles"></div>
       <div class="card"><h3>Tekrar görüşülecekler</h3><div class="flags" id="flags"></div></div>
       <div class="card"><h3>Tahsilat listesi · kimden ne alınacak</h3>
@@ -111,7 +127,8 @@ const SETTINGS = [
   ["in", "Geliş", "date"], ["out", "Çıkış", "date"], ["status", "Durum", ["Teklif", "Opsiyon", "Kesin", "İptal"]],
   ["paymode", "Ödeme şekli", [["kisi", "Herkes kendisi öder"], ["grup", "Grup tek fatura öder"]]],
   ["pNight", "Konaklama (€/kişi/gece)", "number"], ["pDay", "Günübirlik (€/kişi/gün)", "number"], ["pSingle", "Tek kişilik oda farkı (€/gece)", "number"],
-  ["deadline", "İsim–oda listesi son tarihi (gün önce)", "number"], ["salon", "Salon", "text"],
+  ["deadline", "İsim–oda listesi son tarihi (gün önce)", "number"], ["confirmDays", "Kesinleşme son tarihi (gelişten gün önce)", "number"],
+  ["callDays", "Teyit araması (son tarihten gün önce)", "number"], ["salon", "Salon", "text"],
 ];
 
 /* ---------- oturum ---------- */
@@ -133,12 +150,22 @@ async function openList() {
   $("glist").innerHTML = '<p class="note">Yükleniyor…</p>';
   try {
     const { groups } = await api("/api/groups");
+    const due = groups.map((g) => ({ g, ci: HG.confirmInfo(g, g.confirmedAt) })).filter((x) => x.ci.stage === "ara" || x.ci.stage === "gecikti")
+      .sort((a, b) => a.ci.confirmBy - b.ci.confirmBy);
+    $("todayList").innerHTML = due.length ? "" : '<span class="chip ok">Bugün aranacak grup yok</span>';
+    due.forEach(({ g, ci }) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "gitem";
+      b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(g.leader || "sorumlu yok")}${g.phone ? " · " + esc(g.phone) : " · telefon yok"}</span></span>
+        <span class="row small">${ci.stage === "gecikti" ? `<span class="chip crit">Son tarih geçti: ${HG.fmt(ci.confirmBy)}</span>` : `<span class="chip warn">Kesinleşme: ${HG.fmt(ci.confirmBy)} · ${ci.daysToConfirm} gün</span>`}
+        ${g.lastCall ? `<span class="muted">Son arama: ${esc(g.lastCall.result)} (${esc(dtTR(g.lastCall.at))})</span>` : '<span class="muted">Henüz aranmadı</span>'}</span>`;
+      b.onclick = () => openGroup(g.id, "rapor"); $("todayList").appendChild(b);
+    });
     $("glist").innerHTML = groups.length ? "" : '<p class="note">Henüz grup yok. Yukarıdan ilk grubu oluşturun.</p>';
     groups.forEach((g) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "gitem";
       const chip = g.status === "Kesin" ? "ok" : g.status === "İptal" ? "crit" : "warn";
       b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(dTR(g.in))} → ${esc(dTR(g.out))}</span></span>
-        <span class="row small"><span class="chip ${chip}">${esc(g.status)}</span>${g.submittedAt ? '<span class="chip ok">Form geldi</span>' : '<span class="chip warn">Form bekleniyor</span>'}${g.alerts ? `<span class="chip crit">${g.alerts} uyarı</span>` : ""}
+        <span class="row small"><span class="chip ${chip}">${esc(g.status)}</span>${(() => { const ci = HG.confirmInfo(g, g.confirmedAt); return ci.stage === "ara" ? '<span class="chip warn">Aranmalı</span>' : ci.stage === "gecikti" ? '<span class="chip crit">Kesinleşme gecikti</span>' : ""; })()}${g.submittedAt ? '<span class="chip ok">Form geldi</span>' : '<span class="chip warn">Form bekleniyor</span>'}${g.alerts ? `<span class="chip crit">${g.alerts} uyarı</span>` : ""}
         <span class="muted">${g.rooms} oda · ${g.sleepers} konaklayan · ${g.days} günübirlik</span></span>`;
       b.onclick = () => openGroup(g.id); $("glist").appendChild(b);
     });
@@ -174,7 +201,12 @@ function drawDetail() {
   $("dTitle").textContent = `${st.name} · ${dTR(st.in)} → ${dTR(st.out)}`;
   const unseen = (G.alerts || []).filter((a) => !a.seen).length;
   $("alertCount").innerHTML = unseen ? `<span class="chip crit">${unseen}</span>` : "";
-  renderReport({ tiles: $("tiles"), flags: $("flags"), pay: $("payTable"), roomsTable: $("roomTable") }, st, sub, G.submittedAt, () => save({ submission: sub }));
+  renderReport({ tiles: $("tiles"), flags: $("flags"), pay: $("payTable"), roomsTable: $("roomTable") }, st, sub, G.submittedAt, () => save({ submission: sub }), G.confirmedAt);
+  const ci = HG.confirmInfo(st, G.confirmedAt);
+  const stageTxt = { kesin: ["ok", "Kesin"], iptal: ["crit", "İptal"], ara: ["warn", "Aranmalı"], gecikti: ["crit", "Son tarih geçti"], geldi: ["warn", "Kesinleşmeden geldi"], bekliyor: ["warn", "Opsiyon · arama zamanı gelmedi"] }[ci.stage];
+  $("callStage").innerHTML = `<span class="chip ${stageTxt[0]}">${stageTxt[1]}</span>`;
+  $("callInfo").innerHTML = `Teyit araması: <b>${HG.fmt(ci.callOn)}</b> · Kesinleşme son tarihi: <b>${HG.fmt(ci.confirmBy)}</b>${G.confirmedAt ? ` · Kesinleşti: ${esc(dtTR(G.confirmedAt))}` : ""} · Sorumlu: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}`;
+  $("callTable").innerHTML = (G.calls || []).length ? `<thead><tr><th>Zaman</th><th>Arayan</th><th>Sonuç</th><th>Not</th></tr></thead><tbody>${G.calls.map((c) => `<tr><td class="small">${esc(dtTR(c.at))}</td><td class="small">${esc(c.by || "—")}</td><td>${esc(c.result)}</td><td class="small">${esc(c.note)}</td></tr>`).join("")}</tbody>` : "";
   renderEditor({ rooms: $("rooms"), days: $("days"), inv: $("inv") }, st, sub, () => { dirtySub = true; $("saveState").textContent = "Kaydedilmemiş değişiklik"; }, { staff: true });
   $("link").value = `${location.origin}/g.html?t=${G.token}`;
   const grid = $("settingsGrid"); grid.innerHTML = "";
@@ -197,6 +229,12 @@ $("saveSet").onclick = () => {
   save({ settings: s, note: "Otel grup ayarlarını güncelledi" }, "Ayarlar kaydedildi");
 };
 $("copy").onclick = async () => { try { await navigator.clipboard.writeText($("link").value); toast("Link kopyalandı"); } catch (e) { $("link").select(); toast("Linki seçtim, Ctrl+C ile kopyalayın"); } };
+$("saveCall").onclick = async () => {
+  const call = { by: $("c_by").value, result: $("c_result").value, note: $("c_note").value };
+  try { localStorage.setItem("hg_caller", call.by); } catch (e) {}
+  if (await save({ call }, "Arama kaydedildi")) $("c_note").value = "";
+};
+try { $("c_by").value = localStorage.getItem("hg_caller") || ""; } catch (e) {}
 $("seen").onclick = () => save({ alertsSeen: true });
 $("print").onclick = () => window.print();
 window.addEventListener("beforeunload", (e) => { if (dirtySub) { e.preventDefault(); e.returnValue = ""; } });

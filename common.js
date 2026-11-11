@@ -23,6 +23,22 @@ const HG = (() => {
   const nights = (st) => { if (!st.in || !st.out) return 0; return Math.max(0, Math.round((new Date(st.out + "T12:00:00") - new Date(st.in + "T12:00:00")) / 864e5)); };
   const deadlineDate = (st) => { const d = new Date((st.in || "2100-01-01") + "T12:00:00"); d.setDate(d.getDate() - Number(st.deadline || 0)); return d; };
   const daysLeft = (st) => { const t = new Date(); t.setHours(12, 0, 0, 0); return Math.round((deadlineDate(st) - t) / 864e5); };
+  const addDays = (iso, n) => { const d = new Date((iso || "2100-01-01") + "T12:00:00"); d.setDate(d.getDate() - Number(n || 0)); return d; };
+  const today = () => { const t = new Date(); t.setHours(12, 0, 0, 0); return t; };
+  const fmt = (d) => d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  /* teyit: kesinleşme son tarihi = geliş − confirmDays; arama günü = son tarih − callDays */
+  function confirmInfo(st, confirmedAt) {
+    const confirmBy = addDays(st.in, st.confirmDays ?? 7);
+    const callOn = new Date(confirmBy); callOn.setDate(callOn.getDate() - Number(st.callDays ?? 3));
+    const t = today(), arrived = t >= addDays(st.in, 0);
+    let stage = "bekliyor";
+    if (st.status === "İptal") stage = "iptal";
+    else if (st.status === "Kesin" || confirmedAt) stage = "kesin";
+    else if (arrived) stage = "geldi";
+    else if (t > confirmBy) stage = "gecikti";
+    else if (t >= callOn) stage = "ara";
+    return { confirmBy, callOn, stage, daysToConfirm: Math.round((confirmBy - t) / 864e5) };
+  }
   function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
 
   /* ---------- fiyat ---------- */
@@ -45,8 +61,11 @@ const HG = (() => {
   }
 
   /* ---------- kontroller ---------- */
-  function flags(st, sub, submittedAt) {
+  function flags(st, sub, submittedAt, confirmedAt) {
     const F = [];
+    const ci = confirmInfo(st, confirmedAt);
+    if (ci.stage === "ara") F.push(["warn", `Teyit araması zamanı geldi: grup en geç ${fmt(ci.confirmBy)} tarihine kadar kesinleşmeli (${ci.daysToConfirm} gün kaldı). Grup sorumlusu aranmalı.`]);
+    if (ci.stage === "gecikti") F.push(["crit", `Kesinleşme son tarihi (${fmt(ci.confirmBy)}) geçti, grup hâlâ kesin değil. Yönetici kararı gerekli: opsiyon uzatılsın mı, oda ve salon serbest bırakılsın mı?`]);
     if (nights(st) <= 0 && st.in) F.push(["crit", "Tarihler hatalı: çıkış gelişten sonra olmalı."]);
     if (!submittedAt) { const l = daysLeft(st); F.push([l < 0 ? "crit" : "warn", l < 0 ? "Odalama formu gelmedi ve son tarih geçti. Grup sorumlusu hemen aranmalı." : `Odalama formu henüz gönderilmedi. Son tarihe ${l} gün var.`]); }
     if (!sub.leader?.phone) F.push(["warn", "Grup sorumlusunun telefonu yok."]);
@@ -161,11 +180,11 @@ const HG = (() => {
   }
 
   /* ---------- rapor ---------- */
-  function renderReport(els, st, sub, submittedAt, onToggle) {
+  function renderReport(els, st, sub, submittedAt, onToggle, confirmedAt) {
     const n = nights(st), rows = collectRows(st, sub);
     const sleepers = sub.rooms.reduce((x, r) => x + r.people.length, 0);
     const total = rows.reduce((x, r) => x + r.amount, 0), paid = rows.filter((r) => r.o.paid).reduce((x, r) => x + r.amount, 0);
-    const F = flags(st, sub, submittedAt);
+    const F = flags(st, sub, submittedAt, confirmedAt);
     els.tiles.innerHTML = [
       ["Konaklayan", sleepers, `${sub.rooms.length} oda · ${n} gece`],
       ["Günübirlik", sub.days.length, `${eur(st.pDay)} / kişi`],
@@ -186,5 +205,5 @@ const HG = (() => {
     return data;
   }
 
-  return { ROOMTYPES, AGES, $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, collectRows, flags, renderEditor, renderReport, api };
+  return { confirmInfo, fmt, ROOMTYPES, AGES, $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, collectRows, flags, renderEditor, renderReport, api };
 })();

@@ -1,4 +1,4 @@
-import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission } from './_lib.js';
+import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert } from './_lib.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -17,6 +17,14 @@ export default async function handler(req, res) {
     if (b.settings) g.settings = cleanSettings(b.settings);
     if (b.submission) g.submission = cleanSubmission(b.submission, true);
     if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
+    if (b.call) {
+      const c = { at: now, ...cleanCall(b.call) };
+      g.calls = [c, ...(g.calls || [])].slice(0, 100);
+      if (c.result === 'Kesinleşti') { g.settings.status = 'Kesin'; g.confirmedAt = now; }
+      if (c.result === 'İptal') g.settings.status = 'İptal';
+      if (c.result === 'Değişiklik var' || c.result === 'İptal') pushAlert(g, `Teyit araması: ${c.result}${c.note ? ' — ' + c.note : ''}`);
+      g.history = [{ at: now, by: 'otel', text: `Teyit araması (${c.by || 'resepsiyon'}): ${c.result}${c.note ? ' — ' + c.note : ''}` }, ...(g.history || [])].slice(0, 200);
+    }
     if (b.note) g.history = [{ at: now, by: 'otel', text: String(b.note).slice(0, 200) }, ...(g.history || [])].slice(0, 200);
     g.updatedAt = now;
     try {
