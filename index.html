@@ -27,15 +27,14 @@
     </form>
   </section>
 
-  <!-- liste -->
+  <!-- gösterge paneli -->
   <section id="v-list" class="hidden" style="display:grid;gap:18px">
-    <div class="card" id="todayCard">
-      <h2>Aranacak gruplar · teyit</h2>
-      <p class="note">Kesinleşme son tarihi yaklaşan veya geçen, henüz kesinleşmemiş gruplar. Arama sonucu grubun "Grup bilgi raporu" sekmesinden kaydedilir.</p>
-      <div id="todayList" class="glist"></div>
+    <div class="row" style="justify-content:space-between;align-items:end">
+      <div><h2 id="todayTitle">Bugün</h2><span class="small muted" id="lastRefresh"></span></div>
+      <div class="row"><button type="button" class="btn ghost small" id="reload">Yenile</button><button type="button" class="btn small" id="newToggle">+ Yeni grup</button></div>
     </div>
-    <div class="card">
-      <h2>Yeni grup kaydı</h2>
+    <div class="card hidden" id="newCard">
+      <h3>Yeni grup kaydı</h3>
       <form id="newForm" class="grid">
         <label>Grup adı<input id="n_name" required></label>
         <label>Grup sorumlusu<input id="n_leader"></label>
@@ -47,8 +46,24 @@
         <div style="align-self:end"><button class="btn" type="submit">Grubu oluştur</button></div>
       </form>
     </div>
+    <div class="tiles" id="kpis"></div>
+    <div class="dash2">
+      <div class="card"><div class="row" style="justify-content:space-between"><h3>Yapılacaklar</h3><span id="todoCount"></span></div><div id="todo" class="flags"></div></div>
+      <div class="card"><h3>Bugün ve yarın</h3><div id="arrivals" class="flags"></div></div>
+    </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between"><h2>Gruplar</h2><button type="button" class="btn ghost small" id="reload">Yenile</button></div>
+      <h3>Önümüzdeki 14 gün · doluluk</h3>
+      <p class="note">Gruplardan gelen listelere göre. Konaklayan: o gece kalan kişi (kapasite 196 yatak). Otelde toplam: konaklayan + günübirlik; restoran kapasitesi 200 kişi. Formu gelmemiş gruplar 0 görünür.</p>
+      <div class="tablewrap"><table id="days14"></table></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h3>Gruplar</h3>
+        <div class="row">
+          <select id="gFilter" aria-label="Grup filtresi"><option value="active">Yaklaşan ve devam eden</option><option value="past">Geçmiş</option><option value="cancel">İptal</option><option value="all">Hepsi</option></select>
+          <input id="gSearch" placeholder="Grup ara" aria-label="Grup ara" style="max-width:200px">
+        </div>
+      </div>
       <div id="glist" class="glist"><p class="note">Yükleniyor…</p></div>
     </div>
   </section>
@@ -56,7 +71,7 @@
   <!-- detay -->
   <section id="v-detail" class="hidden" style="display:grid;gap:18px">
     <div class="row" style="justify-content:space-between">
-      <button type="button" class="btn ghost small" id="back">← Gruplar</button>
+      <button type="button" class="btn ghost small" id="back">← Gösterge paneli</button>
       <span id="saveState" class="small muted"></span>
     </div>
     <h2 id="dTitle"></h2>
@@ -153,38 +168,117 @@ $("loginForm").onsubmit = async (e) => {
 $("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }).catch(() => {}); $("logout").classList.add("hidden"); showView("login"); };
 const authFail = (e) => { if (e.status === 401) { showView("login"); return true; } toast(e.message); return false; };
 
-/* ---------- liste ---------- */
+/* ---------- gösterge paneli ---------- */
+let GROUPS = [], refreshTimer = null;
+const DAY = 864e5, BEDS = 196, RESTO = 200;
+const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const todayIso = () => isoOf(new Date());
+const plusIso = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoOf(d); };
+const dayName = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "short", day: "2-digit", month: "2-digit" });
+const link = (g, t = "rapor") => `<a href="#${g.id}/${t}" data-open="${g.id}" data-tab="${t}">${esc(g.name)}</a>`;
+
 async function openList() {
   showView("list"); G = null; try { history.replaceState(null, "", "/"); } catch (e) {}
-  $("glist").innerHTML = '<p class="note">Yükleniyor…</p>';
+  $("todayTitle").textContent = "Bugün · " + new Date().toLocaleDateString("tr-TR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
   try {
-    const { groups } = await api("/api/groups");
-    const due = groups.map((g) => ({ g, ci: HG.confirmInfo(g, g.confirmedAt) })).filter((x) => x.ci.stage === "ara" || x.ci.stage === "gecikti")
-      .sort((a, b) => a.ci.confirmBy - b.ci.confirmBy);
-    $("todayList").innerHTML = due.length ? "" : '<span class="chip ok">Bugün aranacak grup yok</span>';
-    due.forEach(({ g, ci }) => {
-      const b = document.createElement("button"); b.type = "button"; b.className = "gitem";
-      b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(g.leader || "sorumlu yok")}${g.phone ? " · " + esc(g.phone) : " · telefon yok"}</span></span>
-        <span class="row small">${ci.stage === "gecikti" ? `<span class="chip crit">Son tarih geçti: ${HG.fmt(ci.confirmBy)}</span>` : `<span class="chip warn">Kesinleşme: ${HG.fmt(ci.confirmBy)} · ${ci.daysToConfirm} gün</span>`}
-        ${g.lastCall ? `<span class="muted">Son arama: ${esc(g.lastCall.result)} (${esc(dtTR(g.lastCall.at))})</span>` : '<span class="muted">Henüz aranmadı</span>'}</span>`;
-      b.onclick = () => openGroup(g.id, "rapor"); $("todayList").appendChild(b);
-    });
-    $("glist").innerHTML = groups.length ? "" : '<p class="note">Henüz grup yok. Yukarıdan ilk grubu oluşturun.</p>';
-    groups.forEach((g) => {
-      const b = document.createElement("button"); b.type = "button"; b.className = "gitem";
-      const chip = g.status === "Kesin" ? "ok" : g.status === "İptal" ? "crit" : "warn";
-      b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(dTR(g.in))} → ${esc(dTR(g.out))}</span></span>
-        <span class="row small"><span class="chip ${chip}">${esc(g.status)}</span>${(() => { const ci = HG.confirmInfo(g, g.confirmedAt); return ci.stage === "ara" ? '<span class="chip warn">Aranmalı</span>' : ci.stage === "gecikti" ? '<span class="chip crit">Kesinleşme gecikti</span>' : ""; })()}${g.submittedAt ? '<span class="chip ok">Form geldi</span>' : '<span class="chip warn">Form bekleniyor</span>'}${g.pending ? '<span class="chip warn">Değişiklik talebi</span>' : ""}${g.alerts ? `<span class="chip crit">${g.alerts} uyarı</span>` : ""}
-        <span class="muted">${g.rooms} oda · ${g.sleepers} konaklayan · ${g.days} günübirlik</span></span>`;
-      b.onclick = () => openGroup(g.id); $("glist").appendChild(b);
-    });
+    GROUPS = (await api("/api/groups")).groups;
+    $("lastRefresh").textContent = "Son güncelleme " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) + " · her dakika yenilenir";
+    drawDash();
   } catch (e) { authFail(e); }
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => { if (!$("v-list").classList.contains("hidden") && !document.hidden) openListQuiet(); }, 60000);
 }
+async function openListQuiet() { try { GROUPS = (await api("/api/groups")).groups; $("lastRefresh").textContent = "Son güncelleme " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) + " · her dakika yenilenir"; drawDash(); } catch (e) {} }
+
+function drawDash() {
+  const t = todayIso(), tm = plusIso(1), in14 = plusIso(14);
+  const live = GROUPS.filter((g) => g.status !== "İptal");
+  const inHouse = live.filter((g) => g.in <= t && t < g.out);
+  const arrivingToday = live.filter((g) => g.in === t), leavingToday = live.filter((g) => g.out === t);
+  const next14 = live.filter((g) => g.in >= t && g.in <= in14);
+  const tonight = inHouse.reduce((x, g) => x + g.sleepers, 0);
+  const openMoneyGroups = live.filter((g) => g.in <= t && g.due - g.paid > 0.009);
+  const openMoney = openMoneyGroups.reduce((x, g) => x + (g.due - g.paid), 0);
+
+  // yapılacaklar
+  const todo = [];
+  live.forEach((g) => {
+    const ci = HG.confirmInfo(g, g.confirmedAt), dl = HG.deadlineDate(g), upcoming = g.in >= t;
+    if (ci.stage === "gecikti") todo.push(["crit", g, `Kesinleşme son tarihi geçti (${HG.fmt(ci.confirmBy)}). Yönetici kararı gerekli.`]);
+    else if (ci.stage === "ara") todo.push(["warn", g, `Teyit araması: ${g.leader || "sorumlu"}${g.phone ? " · " + g.phone : ""} · kesinleşme ${HG.fmt(ci.confirmBy)} (${ci.daysToConfirm} gün)`]);
+    if (upcoming && !g.submittedAt) {
+      const left = Math.round((dl - new Date()) / DAY);
+      if (left < 0) todo.push(["crit", g, `Odalama listesi gelmedi, son tarih geçti (${HG.fmt(dl)}). Grup sorumlusunu arayın.`]);
+      else if (left <= 3) todo.push(["warn", g, `Odalama listesi bekleniyor, son tarihe ${left} gün (${HG.fmt(dl)}).`]);
+    }
+    if (g.pending) todo.push(["warn", g, "Son tarihten sonra değişiklik talebi: onaylayın veya reddedin."]);
+    if (g.alerts) todo.push(["crit", g, `${g.alerts} okunmamış uyarı.`, "gecmis"]);
+    if (g.out <= t && g.due - g.paid > 0.009) todo.push(["crit", g, `Çıkış yaptı, açık hesap: ${eur(g.due - g.paid)} (${g.openAccounts} hesap).`]);
+  });
+  todo.sort((a, b) => (a[0] === b[0] ? 0 : a[0] === "crit" ? -1 : 1));
+
+  $("kpis").innerHTML = [
+    ["Bu gece konaklayan", `${tonight}`, `/ ${BEDS} yatak · ${inHouse.length} grup`, tonight > BEDS ? "crit" : ""],
+    ["Bugün gelen / giden", `${arrivingToday.length} / ${leavingToday.length}`, "grup", ""],
+    ["Önümüzdeki 14 gün", next14.length, `grup · ${next14.filter((g) => g.status === "Kesin").length} kesin, ${next14.filter((g) => g.status !== "Kesin").length} opsiyon`, ""],
+    ["Beklenen tutar · 14 gün", eur(next14.reduce((x, g) => x + g.due, 0)), "gelen listelere göre", ""],
+    ["Açık tahsilat", eur(openMoney), `${openMoneyGroups.length} grup · gelmiş gruplar`, openMoney > 0 ? "warn" : ""],
+    ["Yapılacak", todo.length, `${todo.filter((x) => x[0] === "crit").length} kritik`, todo.some((x) => x[0] === "crit") ? "crit" : ""],
+  ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="small muted">${a}</span><b>${b}</b><span class="small muted">${c}</span></div>`).join("");
+
+  $("todoCount").innerHTML = todo.length ? `<span class="chip ${todo.some((x) => x[0] === "crit") ? "crit" : "warn"}">${todo.length}</span>` : "";
+  $("todo").innerHTML = todo.length ? todo.slice(0, 40).map(([k, g, txt, tb]) => `<div class="flag ${k}"><span class="chip ${k}">${k === "crit" ? "Kritik" : "Yapılacak"}</span><span><b>${link(g, tb || "rapor")}</b> · ${esc(txt)}</span></div>`).join("") : '<span class="chip ok">Bekleyen iş yok</span>';
+
+  const evts = [];
+  [[t, "Bugün"], [tm, "Yarın"]].forEach(([d, label]) => {
+    live.filter((g) => g.in === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--accent-soft)"><span class="chip ok">${label} giriş</span><span><b>${link(g)}</b> · ${g.sleepers} konaklayan, ${g.days} günübirlik, ${g.rooms} oda${g.salon ? " · " + esc(g.salon) : ""} · <span class="muted">${esc(g.status)}</span></span></div>`));
+    live.filter((g) => g.out === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--warn-soft)"><span class="chip warn">${label} çıkış</span><span><b>${link(g)}</b> · ${g.sleepers} konaklayan${g.due - g.paid > 0.009 ? ` · <b>açık ${eur(g.due - g.paid)}</b>` : " · hesap kapalı"}</span></div>`));
+  });
+  inHouse.filter((g) => g.in !== t && g.out !== t).forEach((g) => evts.push(`<div class="flag" style="background:var(--paper)"><span class="chip ok">Otelde</span><span><b>${link(g)}</b> · ${g.sleepers} konaklayan · çıkış ${esc(dayName(g.out))}</span></div>`));
+  $("arrivals").innerHTML = evts.length ? evts.join("") : '<span class="chip ok">Bugün ve yarın giriş/çıkış yok</span>';
+
+  // 14 gün
+  const rows = [];
+  for (let i = 0; i < 14; i++) {
+    const d = plusIso(i);
+    const sleep = live.filter((g) => g.in <= d && d < g.out), dayG = live.filter((g) => g.days && g.in <= d && d <= g.out);
+    const s = sleep.reduce((x, g) => x + g.sleepers, 0), dd = dayG.reduce((x, g) => x + g.days, 0), tot = s + dd;
+    const names = [...new Set([...sleep, ...dayG])];
+    const pct = Math.min(100, Math.round((s / BEDS) * 100));
+    rows.push(`<tr><td><b>${esc(dayName(d))}</b></td>
+      <td><div class="bar" title="${s} / ${BEDS}"><span style="width:${pct}%" class="${s > BEDS ? "over" : pct > 85 ? "hi" : ""}"></span></div><span class="small">${s} / ${BEDS}</span></td>
+      <td class="num">${dd}</td><td class="num">${tot > RESTO ? `<span class="chip crit">${tot}</span>` : tot}</td>
+      <td class="small">${live.filter((g) => g.in === d).map((g) => link(g)).join(", ") || "—"}</td>
+      <td class="small">${live.filter((g) => g.out === d).map((g) => link(g)).join(", ") || "—"}</td>
+      <td class="small">${names.map((g) => link(g)).join(", ") || '<span class="muted">—</span>'}</td></tr>`);
+  }
+  $("days14").innerHTML = `<thead><tr><th>Gün</th><th>Konaklayan</th><th class="num">Günübirlik</th><th class="num">Otelde toplam</th><th>Giriş</th><th>Çıkış</th><th>Otelde olan gruplar</th></tr></thead><tbody>${rows.join("")}</tbody>`;
+  drawGroupList();
+}
+function drawGroupList() {
+  const t = todayIso(), f = $("gFilter").value, q = $("gSearch").value.toLocaleLowerCase("tr");
+  const list = GROUPS.filter((g) => (f === "all") || (f === "cancel" ? g.status === "İptal" : f === "past" ? g.out < t && g.status !== "İptal" : g.out >= t && g.status !== "İptal"))
+    .filter((g) => !q || g.name.toLocaleLowerCase("tr").includes(q));
+  $("glist").innerHTML = list.length ? "" : '<p class="note">Bu filtrede grup yok.</p>';
+  list.forEach((g) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "gitem";
+    const chip = g.status === "Kesin" ? "ok" : g.status === "İptal" ? "crit" : "warn";
+    const ci = HG.confirmInfo(g, g.confirmedAt);
+    b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(dTR(g.in))} → ${esc(dTR(g.out))}${g.leader ? " · " + esc(g.leader) : ""}</span></span>
+      <span class="row small"><span class="chip ${chip}">${esc(g.status)}</span>${ci.stage === "ara" ? '<span class="chip warn">Aranmalı</span>' : ci.stage === "gecikti" ? '<span class="chip crit">Kesinleşme gecikti</span>' : ""}${g.submittedAt ? '<span class="chip ok">Form geldi</span>' : '<span class="chip warn">Form bekleniyor</span>'}${g.pending ? '<span class="chip warn">Değişiklik talebi</span>' : ""}${g.alerts ? `<span class="chip crit">${g.alerts} uyarı</span>` : ""}
+      <span class="muted">${g.rooms} oda · ${g.sleepers} konaklayan · ${g.days} günübirlik · ${eur(g.due)}${g.paid ? ` (ödenen ${eur(g.paid)})` : ""}</span></span>`;
+    b.onclick = () => openGroup(g.id); $("glist").appendChild(b);
+  });
+}
+$("gFilter").onchange = drawGroupList; $("gSearch").oninput = drawGroupList;
+document.addEventListener("click", (e) => { const a = e.target.closest("[data-open]"); if (a) { e.preventDefault(); openGroup(a.dataset.open, a.dataset.tab || "rapor"); } });
 $("reload").onclick = openList;
+$("newToggle").onclick = () => { $("newCard").classList.toggle("hidden"); if (!$("newCard").classList.contains("hidden")) $("n_name").focus(); };
 $("newForm").onsubmit = async (e) => {
   e.preventDefault();
   const s = { name: $("n_name").value, leader: $("n_leader").value, in: $("n_in").value, out: $("n_out").value, paymode: $("n_paymode").value, pNight: $("n_pNight").value, pDay: $("n_pDay").value, pSingle: 15, deadline: 3, status: "Opsiyon" };
-  try { const r = await api("/api/groups", { method: "POST", body: { settings: s } }); e.target.reset(); toast("Grup oluşturuldu"); openGroup(r.id, "ayar"); }
+  if (s.out < s.in) return toast("Çıkış tarihi gelişten önce olamaz.");
+  try { const r = await api("/api/groups", { method: "POST", body: { settings: s } }); e.target.reset(); $("newCard").classList.add("hidden"); toast("Grup oluşturuldu"); openGroup(r.id, "ayar"); }
   catch (err) { authFail(err); }
 };
 

@@ -56,3 +56,9 @@ tr.paid td{background:var(--ok-soft)}
 .linkbox input{flex:1 1 280px;font-family:ui-monospace,Menlo,monospace;font-size:.85rem}
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;font-weight:600;z-index:10}
 textarea{font:400 1rem var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-height:70px}
+
+.dash2{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.tile-crit{border-left:5px solid var(--crit)}.tile-warn{border-left:5px solid var(--warn)}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:90px;margin-bottom:2px}
+.bar span{display:block;height:100%;background:var(--accent)}.bar span.hi{background:var(--warn)}.bar span.over{background:var(--crit)}
+.flag a,td a{color:var(--accent);font-weight:700;text-decoration:none}.flag a:hover,td a:hover{text-decoration:underline}

@@ -114,6 +114,26 @@ export function cleanSubmission(b = {}, staff = false) {
   return out;
 }
 
+const AGE_F = { Y: 1, C8: 1, C3: 0.5, C0: 0 };
+function nightsOf(st) {
+  if (!st.in || !st.out) return 0;
+  return Math.max(0, Math.round((new Date(st.out + 'T12:00:00') - new Date(st.in + 'T12:00:00')) / 864e5));
+}
+/* panelin özet kartları için tutarlar (istemcideki hesapla aynı kural) */
+export function money(g) {
+  const st = g.settings, s = g.submission || {}, n = nightsOf(st);
+  const roomTotal = (r) => r.people.reduce((x, p) => x + st.pNight * n * (AGE_F[p.a] ?? 1), 0) + (r.people.length === 1 && r.people[0].a !== 'C0' ? st.pSingle * n : 0);
+  const dayTotal = (d) => st.pDay * (AGE_F[d.a] ?? 1);
+  const rooms = s.rooms || [], days = s.days || [];
+  const due = rooms.reduce((x, r) => x + roomTotal(r), 0) + days.reduce((x, d) => x + dayTotal(d), 0);
+  let paid = 0, open = 0;
+  if (st.paymode === 'grup') { if (s.groupPay?.paid) paid = due; else open = due > 0 ? 1 : 0; }
+  else {
+    rooms.forEach((r) => { const v = roomTotal(r); if (r.paid) paid += v; else if (v > 0) open++; });
+    days.forEach((d) => { const v = dayTotal(d); if (d.paid) paid += v; else if (v > 0) open++; });
+  }
+  return { due: Math.round(due * 100) / 100, paid: Math.round(paid * 100) / 100, openAccounts: open, nights: n };
+}
 export function summary(g) {
   const s = g.submission || {};
   return {
@@ -122,6 +142,7 @@ export function summary(g) {
     sleepers: (s.rooms || []).reduce((x, r) => x + r.people.length, 0), days: (s.days || []).length,
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
     confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
+    ...money(g), salon: g.settings.salon || '',
     confirmedAt: g.confirmedAt || null, pending: !!g.pending, lastCall: (g.calls || [])[0] || null, leader: g.settings.leader, phone: g.settings.phone,
   };
 }
