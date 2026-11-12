@@ -302,6 +302,7 @@ function drawDash() {
   const openMoney = openMoneyGroups.reduce((x, g) => x + (g.due - g.paid), 0);
   const anyEst = (arr) => arr.some((g) => g.estimated);
   const til = (g) => (g.estimated ? "~" : "");
+  const eur0 = (n) => new Intl.NumberFormat(I18N.locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
 
   const todo = [];
   live.forEach((g) => {
@@ -325,8 +326,8 @@ function drawDash() {
     [t("k_tonight"), `${anyEst(inHouse) ? "~" : ""}${tonight}`, t("k_tonight_sub", { b: BEDS, g: inHouse.length }), tonight > BEDS ? "crit" : "ok"],
     [t("k_inout"), `${arrivingToday.length} / ${leavingToday.length}`, t("k_groups"), ""],
     [t("k_14"), next14.length, t("k_14_sub", { a: next14.filter((g) => g.status === "Kesin").length, b: next14.filter((g) => g.status !== "Kesin").length }), ""],
-    [t("k_due"), (anyEst(next14) ? "~" : "") + eur(next14.reduce((x, g) => x + g.dueEff, 0)), anyEst(next14) ? t("k_due_est") : t("k_due_real"), ""],
-    [t("k_open"), eur(openMoney), t("k_open_sub", { g: openMoneyGroups.length }), openMoney > 0 ? "warn" : "ok"],
+    [t("k_due"), (anyEst(next14) ? "~" : "") + eur0(next14.reduce((x, g) => x + g.dueEff, 0)), anyEst(next14) ? t("k_due_est") : t("k_due_real"), ""],
+    [t("k_open"), eur0(openMoney), t("k_open_sub", { g: openMoneyGroups.length }), openMoney > 0 ? "warn" : "ok"],
     [t("k_todo"), todo.length, t("k_todo_sub", { n: todo.filter((x) => x[0] === "crit").length }), todo.some((x) => x[0] === "crit") ? "crit" : "ok"],
   ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="tl">${a}</span><b>${b}</b><span class="ts">${c}</span></div>`).join("");
 
