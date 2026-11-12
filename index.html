@@ -13,7 +13,7 @@
 <body>
 <header class="topbar"><div class="in">
   <div class="brand"><b data-i18n="app_name"></b><span data-i18n="panel_sub"></span></div>
-  <nav id="mainNav" class="mainnav hidden"><button type="button" class="btn ghost small" id="navDash" data-i18n="nav_dash"></button><button type="button" class="btn ghost small" id="navDepts"><span data-i18n="nav_depts"></span> <span id="navTaskCount"></span></button></nav>
+  <nav id="mainNav" class="mainnav hidden"><button type="button" class="btn ghost small" id="navDash" data-i18n="nav_dash"></button><button type="button" class="btn ghost small" id="navDepts"><span data-i18n="nav_depts"></span> <span id="navTaskCount"></span></button><button type="button" class="btn ghost small hidden" id="navStaff"><span data-i18n="nav_staff"></span> <span id="navLeaveCount"></span></button></nav>
   <span id="langBox"></span>
   <button type="button" class="btn ghost small hidden" id="logout" data-i18n="logout"></button>
 </div></header>
@@ -103,7 +103,12 @@
     </div>
     <nav class="tabs" role="tablist" id="deptTabs"></nav>
     <div class="dash2">
-      <div class="card"><h3 data-i18n="d_auto"></h3><p class="note" data-i18n="d_auto_note"></p><div id="autoItems" class="flags"></div></div>
+      <div style="display:grid;gap:18px;align-content:start">
+        <div class="card"><h3 data-i18n="d_auto"></h3><p class="note" data-i18n="d_auto_note"></p><div id="autoItems" class="flags"></div></div>
+        <div class="card"><div class="row between"><h3 data-i18n="dt_team"></h3><button type="button" class="btn ghost small" id="dlNew" data-i18n="dt_request"></button></div>
+          <form id="dlForm" class="grid hidden subcard" style="margin:10px 0"></form>
+          <div class="small muted" data-i18n="dt_absent" style="margin-bottom:6px"></div><div id="dlList" class="flags"></div></div>
+      </div>
       <div class="card">
         <div class="row between"><h3 data-i18n="d_tasks"></h3><div class="row"><label class="row small" style="gap:6px"><input type="checkbox" id="showDone" style="width:auto"><span data-i18n="d_show_done"></span></label><button type="button" class="btn small" id="dtNew" data-i18n="d_new_task"></button></div></div>
         <form id="dtForm" class="grid hidden" style="margin:10px 0">
@@ -118,6 +123,42 @@
         <div><button class="btn" type="submit" data-i18n="d_create"></button></div>
       </form>
         <div id="taskList" class="flags"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- personel (yalnız müdüriyet) -->
+  <section id="v-staff" class="hidden" style="display:grid;gap:18px">
+    <div class="row between" style="align-items:end">
+      <div><h2 data-i18n="sf_title"></h2><p class="note" data-i18n="sf_note" style="margin:4px 0 0"></p></div>
+      <button type="button" class="btn" id="sfNew" data-i18n="sf_new"></button>
+    </div>
+    <div class="tiles" id="sfKpis"></div>
+    <div class="card">
+      <nav class="tabs" role="tablist" id="sfTabs">
+        <button role="tab" type="button" data-st="people" data-i18n="sf_tab_people"></button>
+        <button role="tab" type="button" data-st="leave"><span data-i18n="sf_tab_leave"></span> <span id="sfPendCount"></span></button>
+        <button role="tab" type="button" data-st="kpi" data-i18n="sf_tab_kpi"></button>
+        <button role="tab" type="button" data-st="cal" data-i18n="sf_tab_cal"></button>
+      </nav>
+      <div id="sf-people" style="display:grid;gap:12px;margin-top:14px">
+        <form id="sfForm" class="grid hidden subcard"></form>
+        <div class="row"><select id="sfDeptFilter" style="width:auto"></select><label class="row small" style="gap:6px"><input type="checkbox" id="sfShowLeft" style="width:auto"><span data-i18n="sf_left"></span></label></div>
+        <div class="tablewrap"><table id="sfTable"></table></div>
+      </div>
+      <div id="sf-leave" class="hidden" style="display:grid;gap:14px;margin-top:14px">
+        <h3 data-i18n="lv_pending"></h3><div id="lvPending" class="flags"></div>
+        <div class="row between"><h3 data-i18n="lv_all"></h3><button type="button" class="btn small" id="lvNewBtn" data-i18n="lv_new"></button></div>
+        <form id="lvForm" class="grid hidden subcard"></form>
+        <div class="tablewrap"><table id="lvTable"></table></div>
+      </div>
+      <div id="sf-kpi" class="hidden" style="display:grid;gap:12px;margin-top:14px">
+        <div class="tablewrap"><table id="kpTable"></table></div>
+        <p class="note" data-i18n="kp_note"></p>
+      </div>
+      <div id="sf-cal" class="hidden" style="display:grid;gap:12px;margin-top:14px">
+        <p class="note" data-i18n="cal_legend"></p>
+        <div class="tablewrap"><table id="calTable" class="cal"></table></div>
       </div>
     </div>
   </section>
@@ -232,9 +273,9 @@
 <script src="/importer.js"></script>
 <script>
 const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api, dayName } = HG;
-let G = null, ETAG = null, dirtySub = false, PDIRTY = false, GROUPS = [], VENUES = [], refreshTimer = null, CUR_TAB = "rapor";
-const views = ["login", "list", "dept", "detail"];
-const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); };
+let ROLE = null, G = null, ETAG = null, dirtySub = false, PDIRTY = false, GROUPS = [], VENUES = [], refreshTimer = null, CUR_TAB = "rapor";
+const views = ["login", "list", "dept", "staff", "detail"];
+const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); $("navStaff").setAttribute("aria-current", v === "staff" ? "page" : "false"); $("navStaff").classList.toggle("hidden", ROLE !== "mudur"); };
 $("langBox").appendChild(I18N.langSelect(rerender));
 I18N.apply();
 function rerender() {
@@ -242,6 +283,7 @@ function rerender() {
   if (!$("v-list").classList.contains("hidden")) { setTodayTitle(); drawDash(); drawVenueEditor(); }
   if (!$("v-detail").classList.contains("hidden") && G) drawDetail(true);
   if (!$("v-dept").classList.contains("hidden")) drawDept();
+  if (!$("v-staff").classList.contains("hidden") && window.drawStaff) drawStaff();
 }
 const SETTINGS = [
   ["name", "f_name", "text"], ["leader", "f_leader", "text"], ["phone", "f_phone", "text"], ["mail", "f_mail", "email"],
@@ -254,15 +296,15 @@ const SETTINGS = [
 
 /* ---------- oturum ---------- */
 async function boot() {
-  try { const r = await api("/api/login"); if (r.staff) { $("logout").classList.remove("hidden"); return openList(); } } catch (e) {}
+  try { const r = await api("/api/login"); ROLE = r.role || (r.staff ? "staff" : null); if (r.staff) { $("logout").classList.remove("hidden"); return openList(); } } catch (e) {}
   showView("login");
 }
 $("loginForm").onsubmit = async (e) => {
   e.preventDefault(); $("loginErr").textContent = "";
-  try { await api("/api/login", { method: "POST", body: { password: $("pw").value } }); $("pw").value = ""; $("logout").classList.remove("hidden"); openList(); }
+  try { const lr = await api("/api/login", { method: "POST", body: { password: $("pw").value } }); ROLE = lr.role || "staff"; $("pw").value = ""; $("logout").classList.remove("hidden"); openList(); }
   catch (err) { $("loginErr").textContent = err.message; }
 };
-$("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }).catch(() => {}); $("logout").classList.add("hidden"); clearInterval(refreshTimer); showView("login"); };
+$("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }).catch(() => {}); ROLE = null; $("logout").classList.add("hidden"); clearInterval(refreshTimer); showView("login"); };
 const authFail = (e) => { if (e.status === 401) { showView("login"); return true; } toast(e.message); return false; };
 
 /* ---------- gösterge paneli ---------- */
@@ -279,7 +321,7 @@ async function openList() {
   showView("list"); G = null; try { history.replaceState(null, "", "/"); } catch (e) {}
   setTodayTitle();
   try {
-    const [gl] = await Promise.all([api("/api/groups"), VENUES.length ? null : loadVenues(), loadTasks()]);
+    const [gl] = await Promise.all([api("/api/groups"), VENUES.length ? null : loadVenues(), loadTasks(), ROLE === "mudur" && window.loadStaffAll ? loadStaffAll().catch(() => {}) : null]);
     GROUPS = gl.groups; $("lastRefresh").textContent = t("last_refresh", { t: timeNow() });
     if (!$("vDate").value) $("vDate").value = todayIso();
     drawDash(); drawVenueEditor();
@@ -580,7 +622,7 @@ async function openDepts(dept) {
   try { localStorage.setItem("hg_dept", CUR_DEPT); } catch (e) {}
   showView("dept"); G = null; try { history.replaceState(null, "", "#depts/" + CUR_DEPT); } catch (e) {}
   drawDept();
-  try { const [gl] = await Promise.all([api("/api/groups"), loadTasks(), VENUES.length ? null : loadVenues()]); GROUPS = gl.groups; drawDept(); } catch (e) { authFail(e); }
+  try { const [gl] = await Promise.all([api("/api/groups"), loadTasks(), VENUES.length ? null : loadVenues(), window.loadTeam ? loadTeam() : null]); GROUPS = gl.groups; drawDept(); } catch (e) { authFail(e); }
 }
 function drawDept() {
   I18N.apply($("v-dept"));
@@ -593,6 +635,7 @@ function drawDept() {
     return `${head}<div class="flag ${x.level}">${x.time && x.time !== "00:00" ? `<span class="chip ${x.level === "crit" ? "crit" : x.level === "warn" ? "warn" : "info"}">${esc(x.time)}</span>` : ""}<span>${x.g ? `<b>${link(x.g, CUR_DEPT === "rezervasyon" || CUR_DEPT === "mudur" ? "rapor" : "program")}</b> · ` : ""}${esc(x.text)}</span></div>`;
   }).join("") : `<span class="chip ok">${t("d_auto_none")}</span>`;
   const list = TASKS.filter((x) => (x.dept === CUR_DEPT || x.from === CUR_DEPT) && ($("showDone").checked || x.status !== "bitti")).sort(sortTasks);
+  if (window.drawDeptTeam) drawDeptTeam();
   $("taskList").innerHTML = list.length ? list.map((x) => taskHTML(x)).join("") : `<span class="chip ok">${t("d_none")}</span>`;
 }
 $("deptTabs").onclick = (e) => { const b = e.target.closest("[data-dept]"); if (b) { $("dtForm").classList.add("hidden"); openDepts(b.dataset.dept); } };
@@ -601,7 +644,7 @@ $("navDash").onclick = () => openList();
 async function demo(action, btn) {
   if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; toast(t("demo_sure")); setTimeout(() => (btn.dataset.armed = ""), 4000); return; }
   btn.dataset.armed = ""; btn.disabled = true;
-  try { const r = await api("/api/demo", { method: "POST", body: { action } }); toast(action === "load" ? t("demo_loaded", { g: r.groups, t: r.tasks }) : t("demo_cleared")); await openList(); }
+  try { const r = await api("/api/demo", { method: "POST", body: { action } }); toast(action === "load" ? t("demo_loaded", { g: r.groups, t: r.tasks }) : t("demo_cleared")); if (window.loadStaffAll && ROLE === "mudur") await loadStaffAll().catch(() => {}); await openList(); }
   catch (e) { authFail(e); } finally { btn.disabled = false; }
 }
 $("demoLoad").onclick = (e) => demo("load", e.currentTarget);
@@ -736,7 +779,9 @@ $("saveSet").onclick = () => {
 };
 window.addEventListener("beforeunload", (e) => { if (dirtySub || PDIRTY) { e.preventDefault(); e.returnValue = ""; } });
 
-boot().then(() => { const m = (location.hash || "").slice(1).split("/"); if (m[0] === "depts" && !$("v-list").classList.contains("hidden")) return openDepts(m[1]); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
+const START_HASH = location.hash || "";
+boot().then(() => { const m = START_HASH.slice(1).split("/"); if (m[0] === "depts" && !$("v-list").classList.contains("hidden")) return openDepts(m[1]); if (m[0] === "staff" && ROLE === "mudur" && !$("v-list").classList.contains("hidden")) return openStaff(m[1]); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
 </script>
+<script src="/personel.js"></script>
 </body>
 </html>

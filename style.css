@@ -132,3 +132,12 @@ details summary{cursor:pointer;font-weight:600;font-size:.92rem;color:var(--acce
 .mainnav .btn[aria-current="page"]{background:rgba(255,255,255,.18);border-color:#fff}
 .flag.task{align-items:flex-start}
 .flag.task select,.flag.task input{min-height:34px;padding:4px 8px}
+.cal th,.cal td{padding:6px 4px;text-align:center;min-width:34px;font-size:.82rem}
+.cal td:first-child,.cal th:first-child{text-align:left;min-width:150px;position:sticky;left:0;background:var(--surface)}
+.cal .we{background:#f1f3f2}
+.cal .calhead td{background:#e6ebea;font-weight:700;text-align:left}
+.cal .cell-ok{background:#dcefe3;color:var(--ok);font-weight:700}
+.cal .cell-crit{background:#f8dcdc;color:var(--crit);font-weight:700}
+.cal .cell-info{background:#e1ecf5;font-weight:700}
+.cal .req{background-image:repeating-linear-gradient(45deg,transparent 0 4px,rgba(0,0,0,.06) 4px 8px)}
+b.crit{color:var(--crit)}

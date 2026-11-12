@@ -23,27 +23,39 @@ function cookies(req) {
   }
   return out;
 }
+/* iki rol: personel (ortak şifre) ve müdüriyet (ayrı şifre; personel bilgileri yalnız burada) */
 export function checkPassword(pw) {
-  const real = process.env.STAFF_PASSWORD || '';
-  return real.length > 0 && safeEq(pw || '', real);
+  const m = process.env.MANAGER_PASSWORD || '', s = process.env.STAFF_PASSWORD || '';
+  if (m.length > 0 && safeEq(pw || '', m)) return 'mudur';
+  if (s.length > 0 && safeEq(pw || '', s)) return 'staff';
+  return null;
 }
-export function setSession(res) {
+export function setSession(res, role = 'staff') {
   const exp = Date.now() + SESSION_HOURS * 3600e3;
-  const payload = `staff.${exp}`;
+  const payload = `${role === 'mudur' ? 'mudur' : 'staff'}.${exp}`;
   res.setHeader('Set-Cookie', `${COOKIE}=${payload}.${sign(payload)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_HOURS * 3600}`);
 }
 export function clearSession(res) {
   res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
 }
-export function isStaff(req) {
-  if (!SECRET) return false;
+export function isStaff(req) { return !!roleOf(req); }
+export function isManager(req) { return roleOf(req) === 'mudur'; }
+export function roleOf(req) {
+  if (!SECRET) return null;
   const c = cookies(req)[COOKIE];
-  if (!c) return false;
+  if (!c) return null;
   const i = c.lastIndexOf('.');
-  if (i < 0) return false;
+  if (i < 0) return null;
   const payload = c.slice(0, i), sig = c.slice(i + 1);
-  if (!safeEq(sign(payload), sig)) return false;
-  return Number(payload.split('.')[1]) > Date.now();
+  if (!safeEq(sign(payload), sig)) return null;
+  const [role, exp] = payload.split('.');
+  return Number(exp) > Date.now() && (role === 'staff' || role === 'mudur') ? role : null;
+}
+export function requireManager(req, res) {
+  const r = roleOf(req);
+  if (r === 'mudur') return true;
+  res.status(r ? 403 : 401).json({ error: 'Yetki gerekli', code: r ? 'e_manager' : 'e_auth' });
+  return false;
 }
 export function requireStaff(req, res) {
   if (isStaff(req)) return true;

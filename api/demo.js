@@ -137,12 +137,69 @@ function tasks() {
   ];
 }
 
+function staff() {
+  const now = new Date().toISOString(), y = new Date().getFullYear();
+  // [kimlik, ad, birim, görev, sözleşme, €/saat, hafta saati, izin hakkı, başlangıç, bitiş]
+  const S = [
+    ['demo-p-ridvan', 'Rıdvan Demo', 'mudur', 'Otel müdürü', 'vollzeit', 32, 40, 30, '2019-03-01'],
+    ['demo-p-esra', 'Esra Demo', 'rezervasyon', 'Rezervasyon sorumlusu', 'vollzeit', 19.5, 40, 28, '2021-05-01'],
+    ['demo-p-can', 'Can Demo', 'rezervasyon', 'Satış ve gruplar', 'teilzeit', 18, 25, 18, '2023-09-01'],
+    ['demo-p-ayse', 'Ayşe Demo', 'resepsiyon', 'Resepsiyon şefi', 'vollzeit', 18.5, 40, 28, '2020-02-01'],
+    ['demo-p-jonas', 'Jonas Demo', 'resepsiyon', 'Resepsiyonist', 'vollzeit', 16, 40, 26, '2024-04-01'],
+    ['demo-p-lea', 'Lea Demo', 'resepsiyon', 'Gece resepsiyonu', 'teilzeit', 16.5, 30, 20, '2024-10-01'],
+    ['demo-p-derya', 'Derya Demo', 'restoran', 'Restaurant şefi', 'vollzeit', 17.5, 40, 28, '2021-06-01'],
+    ['demo-p-tim', 'Tim Demo', 'restoran', 'Servis', 'minijob', 13.9, 10, 10, '2025-05-01'],
+    ['demo-p-sara', 'Sara Demo', 'restoran', 'Servis', 'werkstudent', 14.5, 20, 13, '2025-10-01', `${y + 1}-03-31`],
+    ['demo-p-kemal', 'Kemal Demo', 'salon', 'Etkinlik sorumlusu', 'vollzeit', 18, 40, 28, '2022-01-15'],
+    ['demo-p-yusuf', 'Yusuf Demo', 'mutfak', 'Aşçıbaşı', 'vollzeit', 21, 40, 28, '2018-08-01'],
+    ['demo-p-anna', 'Anna Demo', 'mutfak', 'Aşçı', 'vollzeit', 16.5, 40, 26, '2023-03-01'],
+    ['demo-p-emre', 'Emre Demo', 'mutfak', 'Mutfak yardımcısı', 'azubi', 7.5, 40, 25, `${y - 1}-08-01`, `${y + 2}-07-31`],
+    ['demo-p-hatice', 'Hatice Demo', 'haus', 'Kat hizmetleri şefi', 'vollzeit', 16, 40, 28, '2019-11-01'],
+    ['demo-p-maria', 'Maria Demo', 'haus', 'Oda temizliği', 'teilzeit', 14, 30, 20, '2022-04-01'],
+    ['demo-p-olga', 'Olga Demo', 'haus', 'Oda temizliği', 'aushilfe', 14, 20, 10, '2025-09-01', iso(40)],
+    ['demo-p-murat', 'Murat Demo', 'haus', 'Teknik / bakım', 'vollzeit', 19, 40, 28, '2020-07-01'],
+  ];
+  const people = S.map(([id, name, dept, role, contract, rate, weekHours, vacDays, start, end = '']) => ({ id, name, dept, role, contract, rate, weekHours, vacDays, start, end, phone: '', mail: '', notes: '', active: true, createdAt: now, updatedAt: now }));
+  people.push({ id: 'demo-p-eski', name: 'Peter Demo', dept: 'restoran', role: 'Servis', contract: 'aushilfe', rate: 13.9, weekHours: 15, vacDays: 10, start: '2024-05-01', end: '2025-12-31', phone: '', mail: '', notes: 'Sözleşme bitti', active: false, createdAt: now, updatedAt: now });
+  const L = (id, staffId, type, from, to, status, o = {}) => ({ id, staffId, type, from, to, status, note: '', au: false, by: 'Demo', createdAt: at(-30), ...o });
+  const Y = (m, d) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const leave = [
+    L('demo-l-1', 'demo-p-ayse', 'urlaub', Y(7, 14), Y(7, 25), 'genehmigt'),
+    L('demo-l-2', 'demo-p-jonas', 'urlaub', Y(8, 4), Y(8, 15), 'genehmigt'),
+    L('demo-l-3', 'demo-p-yusuf', 'urlaub', Y(6, 2), Y(6, 20), 'genehmigt'),
+    L('demo-l-4', 'demo-p-hatice', 'urlaub', Y(9, 1), Y(9, 19), 'genehmigt'),
+    L('demo-l-5', 'demo-p-maria', 'krank', Y(2, 10), Y(2, 14), 'gemeldet', { au: true }),
+    L('demo-l-6', 'demo-p-maria', 'krank', Y(10, 6), Y(10, 8), 'gemeldet'),
+    L('demo-l-7', 'demo-p-anna', 'kind', Y(3, 3), Y(3, 4), 'gemeldet'),
+    L('demo-l-8', 'demo-p-tim', 'krank', Y(4, 22), Y(4, 22), 'gemeldet'),
+    L('demo-l-9', 'demo-p-murat', 'urlaub', Y(5, 12), Y(5, 23), 'genehmigt'),
+    L('demo-l-10', 'demo-p-esra', 'urlaub', Y(4, 7), Y(4, 17), 'genehmigt'),
+    L('demo-l-18', 'demo-p-anna', 'krank', Y(1, 12), Y(1, 23), 'gemeldet', { au: true }),
+    L('demo-l-19', 'demo-p-murat', 'krank', Y(9, 14), Y(9, 25), 'gemeldet', { au: true }),
+    L('demo-l-20', 'demo-p-lea', 'krank', Y(3, 16), Y(3, 20), 'gemeldet', { au: true }),
+    L('demo-l-21', 'demo-p-olga', 'krank', Y(10, 19), Y(10, 23), 'gemeldet', { au: true }),
+    L('demo-l-22', 'demo-p-jonas', 'krank', Y(2, 2), Y(2, 6), 'gemeldet', { au: true }),
+    L('demo-l-23', 'demo-p-derya', 'kind', Y(5, 4), Y(5, 6), 'gemeldet'),
+    // şu an ve yakın gelecek
+    L('demo-l-11', 'demo-p-jonas', 'krank', iso(-1), iso(3), 'gemeldet', { by: 'Ayşe (Resepsiyon)', createdAt: at(-1, 7) }),
+    L('demo-l-12', 'demo-p-emre', 'schule', iso(1), iso(2), 'gemeldet'),
+    L('demo-l-13', 'demo-p-derya', 'urlaub', iso(6), iso(10), 'genehmigt'),
+    L('demo-l-14', 'demo-p-kemal', 'urlaub', iso(8), iso(12), 'beantragt', { note: 'Aile ziyareti', createdAt: at(-1, 16), by: 'Kemal Demo' }),
+    L('demo-l-15', 'demo-p-tim', 'urlaub', iso(7), iso(9), 'beantragt', { createdAt: at(0, 8), by: 'Tim Demo' }),
+    L('demo-l-16', 'demo-p-ayse', 'urlaub', iso(20), iso(34), 'beantragt', { note: 'Türkiye', by: 'Ayşe Demo' }),
+    L('demo-l-17', 'demo-p-maria', 'krank', iso(0), iso(0), 'gemeldet', { by: 'Hatice (Kat hizmetleri)', createdAt: at(0, 6) }),
+  ];
+  return { people, leave };
+}
+
 async function clear() {
   let n = 0;
-  for (const p of [...(await listPaths('groups/demo-')), ...(await listPaths('tasks/demo-'))]) {
+  for (const p of [...(await listPaths('groups/demo-')), ...(await listPaths('tasks/demo-')), ...(await listPaths('staff/demo-')), ...(await listPaths('leave/demo-'))]) {
     if (p.startsWith('groups/')) { const r = await readJSON(p).catch(() => null); if (r?.data?.token) await del(tokenPath(r.data.token)).catch(() => {}); }
     await del(p); n++;
   }
+  // demo personeline sonradan girilmiş izin/hastalık kayıtları
+  for (const p of await listPaths('leave/')) { if (p.startsWith('leave/demo-')) continue; const r = await readJSON(p).catch(() => null); if (String(r?.data?.staffId || '').startsWith('demo-')) { await del(p); n++; } }
   // önceki yüklemeden kalmış demo linkleri
   for (const p of await listPaths('tokens/demo-')) await del(p).catch(() => {});
   return n;
@@ -152,7 +209,10 @@ async function load() {
   const gs = build(), ts = tasks();
   for (const g of gs) { await writeJSON(groupPath(g.id), g); await writeJSON(tokenPath(g.token), { id: g.id }); }
   for (const t of ts) await writeJSON(`tasks/${t.id}.json`, t);
-  return { groups: gs.length, tasks: ts.length };
+  const st = staff();
+  for (const p of st.people) await writeJSON(`staff/${p.id}.json`, p);
+  for (const l of st.leave) await writeJSON(`leave/${l.id}.json`, l);
+  return { groups: gs.length, tasks: ts.length, staff: st.people.length, leave: st.leave.length };
 }
 
 export default async function handler(req, res) {
