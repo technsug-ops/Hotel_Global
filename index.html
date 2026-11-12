@@ -11,12 +11,17 @@
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header class="topbar"><div class="in">
+<div class="shell">
+<aside class="side">
   <div class="brand"><b data-i18n="app_name"></b><span data-i18n="panel_sub"></span></div>
-  <nav id="mainNav" class="mainnav hidden"><button type="button" class="btn ghost small" id="navDash" data-i18n="nav_dash"></button><button type="button" class="btn ghost small" id="navDepts"><span data-i18n="nav_depts"></span> <span id="navTaskCount"></span></button><button type="button" class="btn ghost small hidden" id="navStaff"><span data-i18n="nav_staff"></span> <span id="navLeaveCount"></span></button></nav>
-  <span id="langBox"></span>
-  <button type="button" class="btn ghost small hidden" id="logout" data-i18n="logout"></button>
-</div></header>
+  <nav id="mainNav" class="sidenav hidden">
+    <button type="button" class="navi" id="navDash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg><span data-i18n="nav_dash"></span></button>
+    <button type="button" class="navi" id="navDepts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg><span data-i18n="nav_depts"></span><span id="navTaskCount"></span></button>
+    <div class="subnav" id="navDeptList"></div>
+    <button type="button" class="navi hidden" id="navStaff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8"/></svg><span data-i18n="nav_staff"></span><span id="navLeaveCount"></span></button>
+  </nav>
+  <div class="sidefoot"><span id="langBox"></span><button type="button" class="btn ghost small hidden" id="logout" data-i18n="logout"></button></div>
+</aside>
 
 <main class="wrap">
   <!-- giriş -->
@@ -98,7 +103,7 @@
   <!-- bölümler ve işler -->
   <section id="v-dept" class="hidden" style="display:grid;gap:18px">
     <div class="row between" style="align-items:end">
-      <h2 data-i18n="nav_depts"></h2>
+      <h2><span data-i18n="nav_depts"></span> · <span id="deptTitle"></span></h2>
       <label style="max-width:280px"><span data-i18n="d_your_name"></span><input id="myName" maxlength="60" autocomplete="name"></label>
     </div>
     <nav class="tabs" role="tablist" id="deptTabs"></nav>
@@ -267,6 +272,7 @@
   </section>
 </main>
 
+</div>
 <script src="/i18n.js"></script>
 <script src="/common.js"></script>
 <script src="/importer.js"></script>
@@ -274,7 +280,7 @@
 const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api, dayName } = HG;
 let ROLE = null, G = null, ETAG = null, dirtySub = false, PDIRTY = false, GROUPS = [], VENUES = [], refreshTimer = null, CUR_TAB = "rapor";
 const views = ["login", "list", "dept", "staff", "detail"];
-const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); $("navStaff").setAttribute("aria-current", v === "staff" ? "page" : "false"); $("navStaff").classList.toggle("hidden", ROLE !== "mudur"); };
+const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); $("navStaff").setAttribute("aria-current", v === "staff" ? "page" : "false"); $("navStaff").classList.toggle("hidden", ROLE !== "mudur"); if (typeof drawNavDepts === "function" && v !== "login") drawNavDepts(); };
 $("langBox").appendChild(I18N.langSelect(rerender));
 I18N.apply();
 function rerender() {
@@ -493,7 +499,16 @@ const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padSt
 const isOverdue = (x) => x.status !== "bitti" && x.due && (x.due < todayIso() || (x.due === todayIso() && x.time && x.time < nowHM()));
 const PRIO_ORDER = { acil: 0, normal: 1, planli: 2 };
 const sortTasks = (a, b) => (a.status === "bitti") - (b.status === "bitti") || isOverdue(b) - isOverdue(a) || PRIO_ORDER[a.prio] - PRIO_ORDER[b.prio] || ((a.due || "9") + (a.time || "")).localeCompare((b.due || "9") + (b.time || "")) || b.createdAt.localeCompare(a.createdAt);
+function drawNavDepts() {
+  const inDept = !$("v-dept").classList.contains("hidden");
+  $("navDeptList").innerHTML = [...DEPTS, "ekip"].map((d) => {
+    const open = d === "ekip" ? [] : TASKS.filter((x) => x.dept === d && x.status !== "bitti");
+    return `<button type="button" class="subi" data-subdept="${d}" aria-current="${inDept && CUR_DEPT === d ? "page" : "false"}"><span>${esc(d === "ekip" ? t("dt_team") : deptLabel(d))}</span>${open.length ? `<span class="chip ${open.some(isOverdue) ? "crit" : "info"}">${open.length}</span>` : ""}</button>`;
+  }).join("");
+}
+$("navDeptList").onclick = (e) => { const b = e.target.closest("[data-subdept]"); if (b) openDepts(b.dataset.subdept); };
 function drawNavCount() {
+  drawNavDepts();
   const open = TASKS.filter((x) => x.status !== "bitti"), late = open.filter(isOverdue).length;
   $("navTaskCount").innerHTML = open.length ? `<span class="chip ${late ? "crit" : "info"}">${open.length}</span>` : "";
 }
@@ -624,7 +639,7 @@ async function openDepts(dept) {
   try { const [gl] = await Promise.all([api("/api/groups"), loadTasks(), VENUES.length ? null : loadVenues(), window.loadTeam ? loadTeam() : null]); GROUPS = gl.groups; drawDept(); } catch (e) { authFail(e); }
 }
 function drawDept() {
-  I18N.apply($("v-dept"));
+  I18N.apply($("v-dept")); drawNavDepts(); $("deptTitle").textContent = CUR_DEPT === "ekip" ? t("dt_team") : deptLabel(CUR_DEPT);
   const counts = Object.fromEntries(DEPTS.map((d) => [d, TASKS.filter((x) => x.dept === d && x.status !== "bitti")]));
   $("deptTabs").innerHTML = DEPTS.map((d) => `<button role="tab" type="button" data-dept="${d}" aria-selected="${d === CUR_DEPT}">${esc(deptLabel(d))}${counts[d].length ? ` <span class="chip ${counts[d].some(isOverdue) ? "crit" : "info"}">${counts[d].length}</span>` : ""}</button>`).join("") + `<button role="tab" type="button" data-dept="ekip" aria-selected="${CUR_DEPT === "ekip"}">${esc(t("dt_team"))}</button>`;
   const team = CUR_DEPT === "ekip";
