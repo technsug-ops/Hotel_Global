@@ -83,6 +83,7 @@ const I18N = (() => {
     k_todo: ["Yapılacak", "Zu erledigen", "To do"],
     k_todo_sub: ["{n} kritik", "{n} kritisch", "{n} critical"],
     todo: ["Yapılacaklar", "Aufgaben", "To do"],
+    todo_all: ["Tümünü gör ({n}) →", "Alle anzeigen ({n}) →", "Show all ({n}) →"],
     todo_none: ["Bekleyen iş yok", "Keine offenen Aufgaben", "Nothing pending"],
     crit: ["Kritik", "Kritisch", "Critical"],
     task: ["Yapılacak", "Aufgabe", "Task"],

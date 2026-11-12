@@ -156,7 +156,8 @@ b.crit{color:var(--crit)}
 .subi[aria-current="page"]{color:#fff;font-weight:700;background:rgba(255,255,255,.1)}
 .sidefoot{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .side .btn.ghost{color:#fff;border-color:rgba(255,255,255,.45);background:transparent}
-.shell .wrap{width:100%;max-width:1200px;padding-top:24px}
+.shell .wrap{width:100%;max-width:1200px;padding-top:24px;align-content:start}
+[id^="v-"]{align-content:start}
 @media (min-width:1000px){#deptTabs{display:none}}
 @media (max-width:999px){
   .shell{grid-template-columns:1fr}
