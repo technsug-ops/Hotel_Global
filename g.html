@@ -59,6 +59,9 @@
       <div id="inv" style="display:grid;gap:10px"></div>
     </section>
 
+    <section class="card" style="border:2px solid var(--accent)">
+      <label style="display:flex;gap:12px;align-items:flex-start;font-weight:400;color:var(--ink)"><input type="checkbox" id="consent" class="big-check" style="flex:none;margin-top:2px"><span data-i18n="gf_consent"></span></label>
+    </section>
     <p class="note" data-i18n="gf_footer"></p>
   </div>
 </main>
@@ -109,9 +112,10 @@ $("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => sub, token
 $("send").onclick = async () => {
   const ce = capacityErrors(sub);
   if (ce.length) return toast(t("capacity_block", { l: ce.join("; ") }));
+  if (!$("consent").checked) { $("consent").focus(); return toast(t("e_consent")); }
   $("send").disabled = true;
   try {
-    const r = await api(`/api/form?t=${encodeURIComponent(token)}`, { method: "POST", body: sub });
+    const r = await api(`/api/form?t=${encodeURIComponent(token)}`, { method: "POST", body: { ...sub, consent: true } });
     sub = r.submission; submittedAt = r.submittedAt; locked = r.locked; pending = r.pending; dirty = false;
     draw(); toast(r.pending ? t("gf_sent_req") : t("gf_sent"));
   } catch (e) { toast(e.message); } finally { $("send").disabled = false; }

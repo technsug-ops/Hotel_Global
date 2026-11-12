@@ -162,6 +162,9 @@
         <div class="row"><label style="width:auto"><span data-i18n="link_lang"></span><select id="linkLang" style="width:auto"></select></label></div>
         <div class="linkbox"><input id="link" readonly data-i18n-aria="link_title"><button type="button" class="btn small" id="copy" data-i18n="copy"></button></div>
         <p class="note" data-i18n="link_note"></p>
+        <div class="row"><button type="button" class="btn danger small" id="newLink" data-i18n="link_new"></button></div>
+        <p class="note" data-i18n="link_new_note"></p>
+        <div id="consents" class="small muted"></div>
       </div>
       <div class="card">
         <h3 data-i18n="group_settings"></h3>
@@ -435,11 +438,19 @@ function drawDetail(langOnly) {
     el.id = "s_" + k; l.appendChild(el); grid.appendChild(l);
   });
   $("s_notes").value = st.notes || "";
+  const cs = (G.consents || [])[0];
+  $("consents").textContent = cs ? `${t("submitted_by")}: ${cs.name || "—"}${cs.phone ? " · " + cs.phone : ""}${cs.mail ? " · " + cs.mail : ""} · ${dtTR(cs.at)}` : "";
   // uyarılar ve geçmiş
   $("alerts").innerHTML = (G.alerts || []).length ? G.alerts.map((a) => `<div class="flag ${a.seen ? "" : "crit"}"><span class="chip ${a.seen ? "ok" : "crit"}">${a.seen ? t("alert_seen") : t("alert_new")}</span><span>${esc(dtTR(a.at))} · ${esc(HG.logText(a))}</span></div>`).join("") : `<span class="chip ok">${t("no_alerts")}</span>`;
   $("history").innerHTML = `<thead><tr><th>${t("c_time")}</th><th>${t("c_who")}</th><th>${t("c_what")}</th></tr></thead><tbody>${(G.history || []).map((h) => `<tr><td class="small">${esc(dtTR(h.at))}</td><td class="small">${h.by === "grup" ? t("by_grup") : t("by_otel")}</td><td>${esc(HG.logText(h))}</td></tr>`).join("")}</tbody>`;
   if (!PDIRTY || langOnly) drawProgram();
 }
+let linkConfirm = false;
+$("newLink").onclick = async () => {
+  if (!linkConfirm) { linkConfirm = true; toast(t("link_new_confirm")); setTimeout(() => (linkConfirm = false), 6000); return; }
+  linkConfirm = false;
+  if (await save({ regenerateLink: true }, t("link_new_done"))) $("link").value = groupLink();
+};
 $("linkLang").onchange = () => ($("link").value = groupLink());
 $("pendOk").onclick = () => save({ pending: "approve" }, t("pend_applied"));
 $("pendNo").onclick = () => save({ pending: "reject" }, t("pend_rejected"));

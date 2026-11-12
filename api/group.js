@@ -1,4 +1,4 @@
-import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, addHistory, mergeSubmission, describe, cleanSchedule, fail } from './_lib.js';
+import { requireStaff, readJSON, writeJSON, groupPath, tokenPath, newId, del, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, addHistory, mergeSubmission, describe, cleanSchedule, fail } from './_lib.js';
 
 const NOTE_CODES = ['h_rooming_saved', 'h_settings_saved'];
 
@@ -44,6 +44,13 @@ export default async function handler(req, res) {
       const p = { by: c.by, result: c.result, note: c.note };
       if (c.result === 'changed' || c.result === 'cancelled') pushAlert(g, 'a_call', p);
       addHistory(g, 'otel', 'h_call', p);
+    }
+    if (b.regenerateLink) {
+      const old = g.token;
+      g.token = newId(18);
+      await writeJSON(tokenPath(g.token), { id: g.id });
+      try { await del(tokenPath(old)); } catch (e) { console.error('token del', e); }
+      addHistory(g, 'otel', 'h_link_new');
     }
     if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
     if (NOTE_CODES.includes(b.noteCode)) addHistory(g, 'otel', b.noteCode);

@@ -1,4 +1,5 @@
-import { put, get, list } from '@vercel/blob';
+import { put, get, list, del } from '@vercel/blob';
+export { del };
 import crypto from 'node:crypto';
 
 const SECRET = process.env.SESSION_SECRET || '';
@@ -181,6 +182,13 @@ export function mergeSubmission(old = {}, incoming) {
   out.days.forEach((d, i) => { const o = old.days?.[i]; Object.assign(d, { paid: !!o?.paid, given: !!o?.given }); });
   out.groupPay = old.groupPay || { paid: false, given: false };
   return out;
+}
+/* grup linki çıkıştan 7 gün sonra kendiliğinden geçersiz olur */
+export const LINK_GRACE_DAYS = 7;
+export function linkExpired(settings) {
+  if (!settings.out) return false;
+  const d = new Date(settings.out + 'T23:59:59'); d.setDate(d.getDate() + LINK_GRACE_DAYS);
+  return new Date() > d;
 }
 export function roomingDeadline(settings) {
   if (!settings.in) return null;

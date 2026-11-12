@@ -477,6 +477,15 @@ const I18N = (() => {
     e_sheet_failed: ["Tablo getirilemedi.", "Tabelle konnte nicht geladen werden.", "Couldn't load the sheet."],
     e_venues_empty: ["En az bir mekan olmalı.", "Mindestens ein Raum erforderlich.", "At least one room is required."],
     e_generic: ["Hata ({s})", "Fehler ({s})", "Error ({s})"],
+    e_consent: ["Göndermeden önce onay kutusunu işaretleyin.", "Bitte vor dem Senden die Bestätigung ankreuzen.", "Please tick the confirmation box before submitting."],
+    e_link_expired: ["Bu linkin süresi doldu. Otelle iletişime geçin.", "Dieser Link ist abgelaufen. Bitte das Hotel kontaktieren.", "This link has expired. Please contact the hotel."],
+    gf_consent: ["Bu formda başka kişilerin (katılımcıların) bilgilerini onların bilgisi ve onayıyla paylaştığımı, bilgilerin doğru olduğunu ve otelin bu bilgileri yalnız konaklamanın düzenlenmesi ve faturalandırma için kullanacağını kabul ediyorum.", "Ich bestätige, dass ich die Daten anderer Personen (Teilnehmende) mit deren Wissen und Einverständnis übermittle, dass die Angaben korrekt sind und dass das Hotel sie nur zur Organisation des Aufenthalts und zur Abrechnung verwendet.", "I confirm that I share other people's (participants') details with their knowledge and consent, that the details are correct, and that the hotel uses them only to organise the stay and for billing."],
+    link_new: ["Yeni link oluştur", "Neuen Link erzeugen", "Create new link"],
+    link_new_done: ["Yeni link oluşturuldu. Eski link artık çalışmıyor.", "Neuer Link erzeugt. Der alte Link funktioniert nicht mehr.", "New link created. The old link no longer works."],
+    link_new_note: ["Link yanlış kişiye gittiyse veya grup sorumlusu değiştiyse yeni link oluşturun; eski link hemen geçersiz olur. Link, çıkıştan 7 gün sonra kendiliğinden kapanır.", "Bei falschem Empfänger oder Wechsel der Gruppenleitung neuen Link erzeugen; der alte wird sofort ungültig. Der Link läuft 7 Tage nach Abreise automatisch ab.", "If the link went to the wrong person or the group leader changed, create a new one; the old link stops working immediately. Links expire 7 days after departure."],
+    link_new_confirm: ["Eminseniz tekrar basın: eski link geçersiz olacak.", "Zum Bestätigen erneut klicken: der alte Link wird ungültig.", "Click again to confirm: the old link will stop working."],
+    h_link_new: ["Grup linki yenilendi (eski link geçersiz)", "Gruppenlink erneuert (alter Link ungültig)", "Group link renewed (old link revoked)"],
+    submitted_by: ["Formu gönderen", "Gesendet von", "Submitted by"],
   };
 
   const pick = () => {

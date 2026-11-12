@@ -1,4 +1,4 @@
-import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, addHistory, mergeSubmission, roomingDeadline, describe, capacityErrors, fail } from './_lib.js';
+import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, addHistory, mergeSubmission, roomingDeadline, describe, capacityErrors, fail, linkExpired } from './_lib.js';
 
 async function load(token) {
   if (!isId(token)) return null;
@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     if (!cur) return fail(res, 404, 'e_link', 'Link geçersiz veya süresi dolmuş.');
     const g = cur.data;
     if (g.settings.status === 'İptal') return fail(res, 410, 'e_cancelled', 'Bu grup kaydı iptal edildi.');
+    if (linkExpired(g.settings)) return fail(res, 410, 'e_link_expired', 'Linkin süresi doldu.');
     const deadline = roomingDeadline(g.settings);
     const pub = () => ({
       settings: { name: g.settings.name, leader: g.settings.leader, in: g.settings.in, out: g.settings.out, paymode: g.settings.paymode, pNight: g.settings.pNight, pDay: g.settings.pDay, pSingle: g.settings.pSingle, deadline: g.settings.deadline },
@@ -26,6 +27,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
 
     const now = new Date(), nowIso = now.toISOString();
+    if (req.body?.consent !== true) return fail(res, 400, 'e_consent', 'Onay kutusu işaretlenmeli.');
     const incoming = cleanSubmission(req.body || {});
     const capErr = capacityErrors(incoming);
     if (capErr.length) return res.status(400).json({ error: 'Oda kapasitesi aşıldı: ' + capErr.join('; '), code: 'e_capacity', detail: capErr });
@@ -45,6 +47,8 @@ export default async function handler(req, res) {
       g.pending = null;
       addHistory(g, 'grup', first ? 'h_form_sent' : 'h_form_updated', { desc });
     }
+    // kimin gönderdiği: grup sorumlusunun kendi beyanı ve onay zamanı
+    g.consents = [{ at: nowIso, name: incoming.leader.name, phone: incoming.leader.phone, mail: incoming.leader.mail }, ...(g.consents || [])].slice(0, 50);
     g.updatedAt = nowIso;
     await writeJSON(groupPath(g.id), g, cur.etag);
     return res.status(200).json(pub());
