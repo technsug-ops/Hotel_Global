@@ -13,7 +13,7 @@
 <body>
 <header class="topbar"><div class="in">
   <div class="brand"><b data-i18n="app_name"></b><span data-i18n="panel_sub"></span></div>
-  <button type="button" class="btn ghost small hidden" id="homeBtn" data-i18n="panel_title"></button>
+  <nav id="mainNav" class="mainnav hidden"><button type="button" class="btn ghost small" id="navDash" data-i18n="nav_dash"></button><button type="button" class="btn ghost small" id="navDepts"><span data-i18n="nav_depts"></span> <span id="navTaskCount"></span></button></nav>
   <span id="langBox"></span>
   <button type="button" class="btn ghost small hidden" id="logout" data-i18n="logout"></button>
 </div></header>
@@ -91,6 +91,33 @@
     </div>
   </section>
 
+  <!-- bölümler ve işler -->
+  <section id="v-dept" class="hidden" style="display:grid;gap:18px">
+    <div class="row between" style="align-items:end">
+      <h2 data-i18n="nav_depts"></h2>
+      <label style="max-width:280px"><span data-i18n="d_your_name"></span><input id="myName" maxlength="60" autocomplete="name"></label>
+    </div>
+    <nav class="tabs" role="tablist" id="deptTabs"></nav>
+    <div class="dash2">
+      <div class="card"><h3 data-i18n="d_auto"></h3><p class="note" data-i18n="d_auto_note"></p><div id="autoItems" class="flags"></div></div>
+      <div class="card">
+        <div class="row between"><h3 data-i18n="d_tasks"></h3><div class="row"><label class="row small" style="gap:6px"><input type="checkbox" id="showDone" style="width:auto"><span data-i18n="d_show_done"></span></label><button type="button" class="btn small" id="dtNew" data-i18n="d_new_task"></button></div></div>
+        <form id="dtForm" class="grid hidden" style="margin:10px 0">
+        <label style="grid-column:1/-1"><span data-i18n="d_task_title"></span><input id="dtTitle" maxlength="160" data-i18n-ph="d_task_ph" required></label>
+        <label><span data-i18n="d_to"></span><select id="dtDept" class="deptSel"></select></label>
+        <label><span data-i18n="d_from"></span><select id="dtFrom" class="deptSel"></select></label>
+        <label><span data-i18n="d_due"></span><input type="date" id="dtDue"></label>
+        <label><span data-i18n="d_time"></span><input type="time" id="dtTime"></label>
+        <label><span data-i18n="d_prio"></span><select id="dtPrio"><option value="normal" data-i18n="pr_normal"></option><option value="acil" data-i18n="pr_acil"></option><option value="planli" data-i18n="pr_planli"></option></select></label>
+        <label><span data-i18n="d_group"></span><select id="dtGroup"></select></label>
+        <label style="grid-column:1/-1"><span data-i18n="d_note"></span><textarea id="dtNote" rows="2" maxlength="1000"></textarea></label>
+        <div><button class="btn" type="submit" data-i18n="d_create"></button></div>
+      </form>
+        <div id="taskList" class="flags"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- grup sayfası -->
   <section id="v-detail" class="hidden" style="display:grid;gap:18px">
     <div class="row between">
@@ -134,6 +161,21 @@
       <div class="card"><h3 data-i18n="r_pay_title"></h3><div class="tablewrap"><table id="payTable"></table></div><p class="note" data-i18n="r_pay_note"></p></div>
       <div class="card"><h3 data-i18n="r_rooms_title"></h3><div class="tablewrap"><table id="roomTable"></table></div></div>
       <div class="row noprint"><button type="button" class="btn ghost small" id="print" data-i18n="r_print"></button></div>
+      <div class="card" id="gTaskCard">
+        <div class="row between"><h3 data-i18n="d_group_tasks"></h3><button type="button" class="btn ghost small" id="gtNew" data-i18n="d_new_task"></button></div>
+        <form id="gtForm" class="grid hidden" style="margin:10px 0">
+        <label style="grid-column:1/-1"><span data-i18n="d_task_title"></span><input id="gtTitle" maxlength="160" data-i18n-ph="d_task_ph" required></label>
+        <label><span data-i18n="d_to"></span><select id="gtDept" class="deptSel"></select></label>
+        <label><span data-i18n="d_from"></span><select id="gtFrom" class="deptSel"></select></label>
+        <label><span data-i18n="d_due"></span><input type="date" id="gtDue"></label>
+        <label><span data-i18n="d_time"></span><input type="time" id="gtTime"></label>
+        <label><span data-i18n="d_prio"></span><select id="gtPrio"><option value="normal" data-i18n="pr_normal"></option><option value="acil" data-i18n="pr_acil"></option><option value="planli" data-i18n="pr_planli"></option></select></label>
+        <label><span data-i18n="d_group"></span><select id="gtGroup"></select></label>
+        <label style="grid-column:1/-1"><span data-i18n="d_note"></span><textarea id="gtNote" rows="2" maxlength="1000"></textarea></label>
+        <div><button class="btn" type="submit" data-i18n="d_create"></button></div>
+      </form>
+        <div id="gTaskList" class="flags"></div>
+      </div>
     </div>
 
     <div id="t-program" class="hidden" style="display:grid;gap:18px">
@@ -187,14 +229,15 @@
 <script>
 const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api, dayName } = HG;
 let G = null, ETAG = null, dirtySub = false, PDIRTY = false, GROUPS = [], VENUES = [], refreshTimer = null, CUR_TAB = "rapor";
-const views = ["login", "list", "detail"];
-const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("homeBtn").classList.toggle("hidden", v !== "detail"); };
+const views = ["login", "list", "dept", "detail"];
+const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); };
 $("langBox").appendChild(I18N.langSelect(rerender));
 I18N.apply();
 function rerender() {
   I18N.apply();
   if (!$("v-list").classList.contains("hidden")) { setTodayTitle(); drawDash(); drawVenueEditor(); }
   if (!$("v-detail").classList.contains("hidden") && G) drawDetail(true);
+  if (!$("v-dept").classList.contains("hidden")) drawDept();
 }
 const SETTINGS = [
   ["name", "f_name", "text"], ["leader", "f_leader", "text"], ["phone", "f_phone", "text"], ["mail", "f_mail", "email"],
@@ -216,7 +259,6 @@ $("loginForm").onsubmit = async (e) => {
   catch (err) { $("loginErr").textContent = err.message; }
 };
 $("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }).catch(() => {}); $("logout").classList.add("hidden"); clearInterval(refreshTimer); showView("login"); };
-$("homeBtn").onclick = () => openList();
 const authFail = (e) => { if (e.status === 401) { showView("login"); return true; } toast(e.message); return false; };
 
 /* ---------- gösterge paneli ---------- */
@@ -233,7 +275,7 @@ async function openList() {
   showView("list"); G = null; try { history.replaceState(null, "", "/"); } catch (e) {}
   setTodayTitle();
   try {
-    const [gl] = await Promise.all([api("/api/groups"), VENUES.length ? null : loadVenues()]);
+    const [gl] = await Promise.all([api("/api/groups"), VENUES.length ? null : loadVenues(), loadTasks()]);
     GROUPS = gl.groups; $("lastRefresh").textContent = t("last_refresh", { t: timeNow() });
     if (!$("vDate").value) $("vDate").value = todayIso();
     drawDash(); drawVenueEditor();
@@ -241,7 +283,7 @@ async function openList() {
   clearInterval(refreshTimer);
   refreshTimer = setInterval(async () => {
     if ($("v-list").classList.contains("hidden") || document.hidden) return;
-    try { GROUPS = (await api("/api/groups")).groups; $("lastRefresh").textContent = t("last_refresh", { t: timeNow() }); drawDash(); } catch (e) {}
+    try { [GROUPS] = await Promise.all([api("/api/groups").then((r) => r.groups), loadTasks()]); $("lastRefresh").textContent = t("last_refresh", { t: timeNow() }); drawDash(); } catch (e) {}
   }, 60000);
 }
 
@@ -272,6 +314,7 @@ function drawDash() {
     if (g.out <= tIso && g.due - g.paid > 0.009) todo.push(["crit", g, t("t_open_after", { a: eur(g.due - g.paid), n: g.openAccounts })]);
   });
   HG.venueIssues(live, VENUES, tIso, in14).forEach((x) => todo.push([x.level, x.groups[0], `${dayName(x.date)} · ${x.text}`, "program"]));
+  TASKS.filter(isOverdue).forEach((x) => todo.push(["crit", { dept: x.dept }, t("t_task_overdue", { d: dayName(x.due) + (x.time ? " " + x.time : ""), x: x.title })]));
   todo.sort((a, b) => (a[0] === b[0] ? 0 : a[0] === "crit" ? -1 : 1));
 
   $("kpis").innerHTML = [
@@ -284,7 +327,7 @@ function drawDash() {
   ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="tl">${a}</span><b>${b}</b><span class="ts">${c}</span></div>`).join("");
 
   $("todoCount").innerHTML = todo.length ? `<span class="chip ${todo.some((x) => x[0] === "crit") ? "crit" : "warn"}">${todo.length}</span>` : "";
-  $("todo").innerHTML = todo.length ? todo.slice(0, 40).map(([k, g, txt, tb]) => `<div class="flag ${k}"><span class="chip ${k}">${k === "crit" ? t("crit") : t("task")}</span><span><b>${link(g, tb || "rapor")}</b> · ${esc(txt)}</span></div>`).join("") : `<span class="chip ok">${t("todo_none")}</span>`;
+  $("todo").innerHTML = todo.length ? todo.slice(0, 40).map(([k, g, txt, tb]) => `<div class="flag ${k}"><span class="chip ${k}">${k === "crit" ? t("crit") : t("task")}</span><span><b>${g.dept ? `<a href="#depts/${g.dept}" data-godept="${g.dept}">${esc(deptLabel(g.dept))}</a>` : link(g, tb || "rapor")}</b> · ${esc(txt)}</span></div>`).join("") : `<span class="chip ok">${t("todo_none")}</span>`;
 
   const evts = [];
   [[tIso, t("today")], [tm, t("tomorrow")]].forEach(([d, label]) => {
@@ -316,9 +359,9 @@ function drawVenues() {
   const d = $("vDate").value || todayIso(), live = GROUPS.filter((g) => g.status !== "İptal");
   const plan = HG.dayPlan(live, VENUES, d), issues = HG.venueIssues(live, VENUES, d, d);
   const restCap = VENUES.filter((v) => v.kind === "restoran").reduce((x, v) => x + (v.cap || 0), 0);
-  $("meals").innerHTML = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara"].map((k) => {
-    const n = plan.meals[k] || 0, over = restCap && k !== "İkram / ara" && n > restCap;
-    return `<div class="tile ${over ? "tile-crit" : ""}"><span class="tl">${HG.kindLabel(k)} · ${esc(dayName(d))}</span><b>${n}</b><span class="ts">${t("persons")}${k !== "İkram / ara" && restCap ? " · " + t("restaurants_cap", { n: restCap }) : ""}</span></div>`;
+  $("meals").innerHTML = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara", "Gün boyu ikram"].map((k) => {
+    const snack = k === "İkram / ara" || k === "Gün boyu ikram", n = plan.meals[k] || 0, over = restCap && !snack && n > restCap;
+    return `<div class="tile ${over ? "tile-crit" : ""}"><span class="tl">${HG.kindLabel(k)} · ${esc(dayName(d))}</span><b>${n}</b><span class="ts">${t("persons")}${!snack && restCap ? " · " + t("restaurants_cap", { n: restCap }) : ""}</span></div>`;
   }).join("");
   $("venueTable").innerHTML = `<thead><tr><th>${t("c_venue")}</th><th>${t("c_kindcap")}</th><th>${t("c_program")}</th><th>${t("c_state")}</th></tr></thead><tbody>${plan.rows.map(({ venue: v, key, ev }) => {
     const iss = issues.filter((x) => x.venue === key);
@@ -369,6 +412,7 @@ function drawGroupList() {
   });
 }
 $("gFilter").onchange = drawGroupList; $("gSearch").oninput = drawGroupList;
+document.addEventListener("click", (e) => { const d = e.target.closest("[data-godept]"); if (d) { e.preventDefault(); openDepts(d.dataset.godept); } });
 document.addEventListener("click", (e) => { const a = e.target.closest("[data-open]"); if (a) { e.preventDefault(); openGroup(a.dataset.open, a.dataset.tab || "rapor"); } });
 $("reload").onclick = openList;
 $("newToggle").onclick = () => { $("newCard").classList.toggle("hidden"); if (!$("newCard").classList.contains("hidden")) $("n_name").focus(); };
@@ -389,10 +433,172 @@ function tab(x) {
 document.querySelectorAll("#v-detail .tabs button").forEach((b) => (b.onclick = () => tab(b.dataset.t)));
 $("back").onclick = openList;
 
+/* ---------- bölümler ve görevler ---------- */
+const DEPTS = ["resepsiyon", "rezervasyon", "restoran", "mutfak", "haus", "salon", "mudur"];
+const deptLabel = (d) => (d ? t("dept_" + d) : "—");
+let TASKS = [], CUR_DEPT = "resepsiyon";
+try { CUR_DEPT = localStorage.getItem("hg_dept") || CUR_DEPT; if (!DEPTS.includes(CUR_DEPT)) CUR_DEPT = "resepsiyon"; } catch (e) {}
+const myName = () => $("myName").value.trim();
+try { $("myName").value = localStorage.getItem("hg_name") || ""; } catch (e) {}
+$("myName").onchange = () => { try { localStorage.setItem("hg_name", myName()); } catch (e) {} };
+const needName = () => { if (myName()) return false; toast(t("d_need_name")); if (!$("v-dept").classList.contains("hidden")) $("myName").focus(); else openDepts(CUR_DEPT).then(() => $("myName").focus()); return true; };
+async function loadTasks() { try { TASKS = (await api("/api/tasks")).tasks || []; } catch (e) { if (e.status === 401) throw e; TASKS = []; } drawNavCount(); }
+const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+const isOverdue = (x) => x.status !== "bitti" && x.due && (x.due < todayIso() || (x.due === todayIso() && x.time && x.time < nowHM()));
+const PRIO_ORDER = { acil: 0, normal: 1, planli: 2 };
+const sortTasks = (a, b) => (a.status === "bitti") - (b.status === "bitti") || isOverdue(b) - isOverdue(a) || PRIO_ORDER[a.prio] - PRIO_ORDER[b.prio] || ((a.due || "9") + (a.time || "")).localeCompare((b.due || "9") + (b.time || "")) || b.createdAt.localeCompare(a.createdAt);
+function drawNavCount() {
+  const open = TASKS.filter((x) => x.status !== "bitti"), late = open.filter(isOverdue).length;
+  $("navTaskCount").innerHTML = open.length ? `<span class="chip ${late ? "crit" : "info"}">${open.length}</span>` : "";
+}
+
+function taskHTML(x, showGroup = true) {
+  const late = isOverdue(x), k = x.status === "bitti" ? "ok" : late || x.prio === "acil" ? "crit" : x.status === "bekliyor" ? "warn" : "info";
+  const opt = (arr, cur, pre) => arr.map((v) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(t(pre + v))}</option>`).join("");
+  const log = (x.log || []).slice(0, 6).map((l) => `<div class="small"><span class="muted">${esc(dtTR(l.at))}${l.who ? " · " + esc(l.who) : ""}:</span> ${esc(l.code === "tl_status" ? t("tl_status", { a: t("ts_" + l.p.a), b: t("ts_" + l.p.b) }) : l.code === "tl_moved" ? t("tl_moved", { a: deptLabel(l.p.a), b: deptLabel(l.p.b) }) : t(l.code, l.p || {}))}</div>`).join("");
+  return `<div class="flag ${k} task" data-task="${esc(x.id)}">
+    <span class="chip ${k}">${esc(t("ts_" + x.status))}</span>
+    <div style="display:grid;gap:6px;flex:1;min-width:0">
+      <div><b>${esc(x.title)}</b>${x.prio !== "normal" ? ` <span class="chip ${x.prio === "acil" ? "crit" : "info"}">${esc(t("pr_" + x.prio))}</span>` : ""}${late ? ` <span class="chip crit">${t("d_overdue")}</span>` : ""}</div>
+      <div class="small muted">${esc(t("d_from_to", { a: deptLabel(x.from), b: deptLabel(x.dept) }))}${x.due ? " · " + esc(dayName(x.due)) + (x.time ? " " + esc(x.time) : "") : ""}${showGroup && x.groupId ? ` · <a href="#${esc(x.groupId)}/rapor" data-open="${esc(x.groupId)}">${esc(x.groupName || "→")}</a>` : ""}${x.assignee ? " · " + esc(t("d_assignee")) + ": " + esc(x.assignee) : ""}</div>
+      ${x.note ? `<div class="small" style="white-space:pre-wrap">${esc(x.note)}</div>` : ""}
+      <div class="row small noprint">
+        <select data-ta="status" style="width:auto" data-i18n-aria="f_status">${opt(["acik", "devam", "bekliyor", "bitti"], x.status, "ts_")}</select>
+        <select data-ta="dept" style="width:auto" aria-label="${esc(t("d_to"))}">${opt(DEPTS, x.dept, "dept_")}</select>
+        ${x.status !== "bitti" && x.assignee !== myName() ? `<button type="button" class="btn ghost small" data-ta="take">${t("d_take")}</button>` : ""}
+      </div>
+      <details><summary class="small">${esc(t("tab_log"))} (${(x.log || []).length})</summary><div style="display:grid;gap:4px;margin-top:6px">${log}</div></details>
+      <div class="row noprint"><input data-ta="comment" maxlength="1000" placeholder="${esc(t("d_comment_ph"))}" style="flex:1;min-width:160px"><button type="button" class="btn ghost small" data-ta="send">${t("d_comment_btn")}</button></div>
+    </div></div>`;
+}
+async function updateTask(id, body) {
+  if (needName()) return;
+  try { const r = await api(`/api/tasks?id=${encodeURIComponent(id)}`, { method: "PUT", body: { ...body, who: myName() } }); const i = TASKS.findIndex((x) => x.id === id); if (i >= 0) TASKS[i] = r.task; }
+  catch (e) { if (!authFail(e) && e.status === 409) await loadTasks(); }
+  redrawTasks();
+}
+function redrawTasks() { drawNavCount(); if (!$("v-dept").classList.contains("hidden")) drawDept(); if (!$("v-detail").classList.contains("hidden") && G) drawGroupTasks(); if (!$("v-list").classList.contains("hidden")) drawDash(); }
+document.addEventListener("change", (e) => { const el = e.target.closest("[data-ta]"), c = el && el.closest("[data-task]"); if (!c || !["status", "dept"].includes(el.dataset.ta)) return; updateTask(c.dataset.task, { [el.dataset.ta]: el.value }); });
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("button[data-ta]"), c = el && el.closest("[data-task]"); if (!c) return;
+  if (el.dataset.ta === "take") updateTask(c.dataset.task, { assignee: myName(), status: "devam" });
+  if (el.dataset.ta === "send") { const inp = c.querySelector('[data-ta="comment"]'); if (inp.value.trim()) updateTask(c.dataset.task, { comment: inp.value.trim() }); }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches('[data-ta="comment"]')) { e.preventDefault(); e.target.closest("[data-task]").querySelector('[data-ta="send"]').click(); } });
+
+function fillTaskForm(p, d) {
+  const o = (v, l, sel) => `<option value="${esc(v)}"${sel ? " selected" : ""}>${esc(l)}</option>`;
+  $(p + "Dept").innerHTML = DEPTS.map((x) => o(x, deptLabel(x), x === d.dept)).join("");
+  $(p + "From").innerHTML = o("", "—", !d.from) + DEPTS.map((x) => o(x, deptLabel(x), x === d.from)).join("");
+  const gs = GROUPS.filter((g) => g.status !== "İptal" && g.out >= todayIso());
+  $(p + "Group").innerHTML = o("", "—", !d.groupId) + gs.map((g) => o(g.id, `${g.name} · ${HG.fmt(new Date(g.in + "T12:00"))}`, g.id === d.groupId)).join("") + (d.groupId && !gs.some((g) => g.id === d.groupId) ? o(d.groupId, d.groupName || d.groupId, true) : "");
+  $(p + "Due").value = d.due || ""; $(p + "Time").value = ""; $(p + "Title").value = ""; $(p + "Note").value = ""; $(p + "Prio").value = "normal";
+}
+function bindTaskForm(p, defaults) {
+  $(p + "New").onclick = () => { const f = $(p + "Form"), open = f.classList.toggle("hidden") === false; if (open) { fillTaskForm(p, defaults()); $(p + "Title").focus(); } };
+  $(p + "Form").onsubmit = async (e) => {
+    e.preventDefault(); if (needName()) return;
+    const gid = $(p + "Group").value, g = GROUPS.find((x) => x.id === gid) || (G && G.id === gid ? { name: G.settings.name } : null);
+    try {
+      const r = await api("/api/tasks", { method: "POST", body: { title: $(p + "Title").value, note: $(p + "Note").value, dept: $(p + "Dept").value, from: $(p + "From").value, due: $(p + "Due").value, time: $(p + "Time").value, prio: $(p + "Prio").value, groupId: gid, groupName: g ? g.name : "", who: myName() } });
+      TASKS.unshift(r.task); $(p + "Form").classList.add("hidden"); toast(t("d_created")); redrawTasks();
+    } catch (err) { authFail(err); }
+  };
+}
+bindTaskForm("dt", () => ({ dept: CUR_DEPT, from: "", due: todayIso() }));
+bindTaskForm("gt", () => ({ dept: "resepsiyon", from: "", groupId: G && G.id, groupName: G && G.settings.name, due: G && G.settings.in >= todayIso() ? G.settings.in : todayIso() }));
+$("showDone").onchange = () => drawDept();
+
+function drawGroupTasks() {
+  const list = TASKS.filter((x) => x.groupId === G.id).sort(sortTasks);
+  $("gTaskList").innerHTML = list.length ? list.map((x) => taskHTML(x, false)).join("") : `<span class="muted small">${t("d_group_none")}</span>`;
+}
+
+/* gruplardan otomatik çıkan işler */
+const ON_TABLE = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara"];
+const SUPPORT = ["Gün boyu ikram"];
+const tr = (e) => `${e.start}–${e.end || "?"}`;
+function autoItems(dept, days) {
+  const live = GROUPS.filter((g) => g.status !== "İptal"), out = [];
+  const add = (level, g, text, date, time = "") => out.push({ level, g, text, date, time });
+  const evOf = (d) => live.flatMap((g) => (g.schedule || []).filter((e) => e.date === d).map((e) => ({ ...e, g, pax: e.pax || g.sleepersEff + g.daysEff })));
+  const xt = (e) => (e.title ? " · " + e.title : "") + (e.note ? " · " + e.note : "");
+  if (dept === "rezervasyon" || dept === "mudur") {
+    const tIso = todayIso();
+    live.forEach((g) => {
+      const ci = HG.confirmInfo(g, g.confirmedAt);
+      if (ci.stage === "gecikti") add("crit", g, t("t_confirm_late", { d: HG.fmt(ci.confirmBy) }));
+      else if (ci.stage === "ara" && dept === "rezervasyon") add("warn", g, t("t_call", { who: (g.leader || t("f_leader")) + (g.phone ? " · " + g.phone : ""), d: HG.fmt(ci.confirmBy), n: ci.daysToConfirm }));
+      if (g.in >= tIso && !g.submittedAt) { const dl = HG.deadlineDate(g), left = Math.round((dl - new Date()) / 864e5); if (left < 0) add("crit", g, t("t_list_late", { d: HG.fmt(dl) })); else if (left <= 3 && dept === "rezervasyon") add("warn", g, t("t_list_soon", { n: left, d: HG.fmt(dl) })); }
+      if (g.pending) add(dept === "mudur" ? "warn" : "warn", g, t("t_pending"));
+      if (dept === "mudur" && g.alerts) add("crit", g, t("t_alerts", { n: g.alerts }));
+      if (dept === "mudur" && g.out <= tIso && g.due - g.paid > 0.009) add("crit", g, t("t_open_after", { a: eur(g.due - g.paid), n: g.openAccounts }));
+    });
+    if (dept === "mudur") HG.venueIssues(live, VENUES, tIso, plusIso(14)).filter((x) => x.level === "crit").forEach((x) => add("crit", x.groups[0], x.text, x.date));
+    return out;
+  }
+  days.forEach((d) => {
+    const ev = evOf(d);
+    if (dept === "restoran") {
+      ev.filter((e) => ON_TABLE.includes(e.kind)).forEach((e) => add("info", e.g, t("ai_service", { k: HG.kindLabel(e.kind), t: tr(e), v: e.venue || "—", n: e.pax, x: xt(e) }), d, e.start));
+      ev.filter((e) => SUPPORT.includes(e.kind)).forEach((e) => add("warn", e.g, t("ai_support", { v: e.venue || "—", t: tr(e), n: e.pax }), d, e.start));
+      // salon kullanımı var ama aynı grubun o gün kesintisiz ikramı yoksa yine de destek hatırlatması
+      ev.filter((e) => e.kind === "Salon kullanımı" && !ev.some((s) => s.g.id === e.g.id && SUPPORT.includes(s.kind))).forEach((e) => add("info", e.g, t("ai_support", { v: e.venue || "—", t: tr(e), n: e.pax }), d, e.start));
+    }
+    if (dept === "mutfak") {
+      ev.filter((e) => ON_TABLE.includes(e.kind) || SUPPORT.includes(e.kind)).forEach((e) => add(SUPPORT.includes(e.kind) ? "warn" : "info", e.g, t("ai_kitchen", { k: HG.kindLabel(e.kind), t: tr(e), n: e.pax, x: xt(e) }), d, e.start));
+      const m = HG.dayPlan(live, VENUES, d).meals;
+      if (ev.length) out.push({ level: "in", g: null, text: t("ai_meal_total", { d: dayName(d), b: m["Kahvaltı"] || 0, l: m["Öğle yemeği"] || 0, n: m["Akşam yemeği"] || 0, s: (m["İkram / ara"] || 0) + (m["Gün boyu ikram"] || 0) }), date: d, time: "00:00" });
+    }
+    if (dept === "haus") {
+      live.filter((g) => g.in === d).forEach((g) => {
+        if (g.rooms) { const types = Object.entries(g.roomTypes || {}).map(([k, n]) => `${n}× ${HG.rtLabel(k)}`).join(", ") || "—"; add("info", g, t("ai_rooms_in", { r: g.rooms, types, x: (g.extraBeds ? t("ai_extra", { n: g.extraBeds }) : "") + (g.cribs ? t("ai_crib", { n: g.cribs }) : "") }), d); }
+        else add("warn", g, t("ai_rooms_in_est", { s: g.sleepersEff }), d);
+      });
+      live.filter((g) => g.out === d).forEach((g) => add("info", g, t("ai_rooms_out", { r: g.rooms || "~" }), d));
+      ev.filter((e) => e.kind === "Salon kullanımı").forEach((e) => add("info", e.g, t("ai_tech", { v: e.venue || "—", t: tr(e) }), d, e.start));
+    }
+    if (dept === "salon") {
+      ev.filter((e) => e.kind === "Salon kullanımı").forEach((e) => add("info", e.g, t("ai_salon", { v: e.venue || "—", t: tr(e), n: e.pax, x: xt(e) }), d, e.start));
+      HG.venueIssues(live, VENUES, d, d).forEach((x) => add(x.level, x.groups[0], x.text, d));
+    }
+    if (dept === "resepsiyon") {
+      live.filter((g) => g.in === d).forEach((g) => add("info", g, t("ai_rec_in", { s: (g.estimated ? "~" : "") + g.sleepersEff, d: (g.estimated ? "~" : "") + g.daysEff, a: eur(g.dueEff - g.paid) }), d));
+      live.filter((g) => g.out === d).forEach((g) => add(g.due - g.paid > 0.009 ? "warn" : "info", g, g.due - g.paid > 0.009 ? t("ai_rec_out", { a: eur(g.due - g.paid) }) : t("ai_rec_out_ok"), d));
+    }
+  });
+  return out.sort((a, b) => ((a.date || "") + a.time).localeCompare((b.date || "") + b.time));
+}
+
+async function openDepts(dept) {
+  if (dept && DEPTS.includes(dept)) CUR_DEPT = dept;
+  try { localStorage.setItem("hg_dept", CUR_DEPT); } catch (e) {}
+  showView("dept"); G = null; try { history.replaceState(null, "", "#depts/" + CUR_DEPT); } catch (e) {}
+  drawDept();
+  try { const [gl] = await Promise.all([api("/api/groups"), loadTasks(), VENUES.length ? null : loadVenues()]); GROUPS = gl.groups; drawDept(); } catch (e) { authFail(e); }
+}
+function drawDept() {
+  I18N.apply($("v-dept"));
+  const counts = Object.fromEntries(DEPTS.map((d) => [d, TASKS.filter((x) => x.dept === d && x.status !== "bitti")]));
+  $("deptTabs").innerHTML = DEPTS.map((d) => `<button role="tab" type="button" data-dept="${d}" aria-selected="${d === CUR_DEPT}">${esc(deptLabel(d))}${counts[d].length ? ` <span class="chip ${counts[d].some(isOverdue) ? "crit" : "info"}">${counts[d].length}</span>` : ""}</button>`).join("");
+  const days = [0, 1, 2].map(plusIso), items = autoItems(CUR_DEPT, days);
+  let lastDay = null;
+  $("autoItems").innerHTML = items.length ? items.map((x) => {
+    const head = x.date && x.date !== lastDay ? `<div class="small" style="margin-top:6px"><b>${esc(dayName(x.date))}</b></div>` : ""; if (x.date) lastDay = x.date;
+    return `${head}<div class="flag ${x.level}">${x.time && x.time !== "00:00" ? `<span class="chip ${x.level === "crit" ? "crit" : x.level === "warn" ? "warn" : "info"}">${esc(x.time)}</span>` : ""}<span>${x.g ? `<b>${link(x.g, CUR_DEPT === "rezervasyon" || CUR_DEPT === "mudur" ? "rapor" : "program")}</b> · ` : ""}${esc(x.text)}</span></div>`;
+  }).join("") : `<span class="chip ok">${t("d_auto_none")}</span>`;
+  const list = TASKS.filter((x) => (x.dept === CUR_DEPT || x.from === CUR_DEPT) && ($("showDone").checked || x.status !== "bitti")).sort(sortTasks);
+  $("taskList").innerHTML = list.length ? list.map((x) => taskHTML(x)).join("") : `<span class="chip ok">${t("d_none")}</span>`;
+}
+$("deptTabs").onclick = (e) => { const b = e.target.closest("[data-dept]"); if (b) { $("dtForm").classList.add("hidden"); openDepts(b.dataset.dept); } };
+$("navDepts").onclick = () => openDepts(CUR_DEPT);
+$("navDash").onclick = () => openList();
+
 async function openGroup(id, x = "rapor") {
   try {
     const [r, gl] = await Promise.all([api(`/api/group?id=${encodeURIComponent(id)}`), api("/api/groups"), VENUES.length ? null : loadVenues()]);
     GROUPS = gl.groups; G = r.group; ETAG = r.etag; dirtySub = false; PDIRTY = false; showView("detail"); drawDetail(); tab(x); window.scrollTo(0, 0);
+    loadTasks().then(() => G && G.id === id && drawGroupTasks()).catch(() => {});
   } catch (e) { authFail(e); }
 }
 async function save(patch, msg) {
@@ -408,6 +614,7 @@ function drawDetail(langOnly) {
   const chip = st.status === "Kesin" ? "ok" : st.status === "İptal" ? "crit" : "warn";
   $("dStatus").innerHTML = `<span class="chip ${chip}">${esc(HG.statusLabel(st.status))}</span>`;
   $("dMeta").innerHTML = `<span>${esc(t("gh_dates", { a: dTR(st.in), b: dTR(st.out), n: HG.nights(st) }))}</span><span>${t("gh_leader")}: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}${st.mail ? " · " + esc(st.mail) : ""}</span>${st.salon ? `<span>${t("f_salon")}: ${esc(st.salon)}</span>` : ""}`;
+  drawGroupTasks();
   const unseen = (G.alerts || []).filter((a) => !a.seen).length;
   $("alertCount").innerHTML = unseen ? `<span class="chip crit">${unseen}</span>` : "";
   renderReport({ tiles: $("tiles"), flags: $("flags"), pay: $("payTable"), roomsTable: $("roomTable") }, st, sub, G.submittedAt, () => save({ submission: sub }), G.confirmedAt);
@@ -466,7 +673,7 @@ const copyLink = async () => { $("link").value = groupLink(); try { await naviga
 $("copy").onclick = copyLink; $("copyTop").onclick = copyLink;
 
 /* ---------- program ve mekanlar ---------- */
-const KINDS = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara", "Salon kullanımı", "Diğer"];
+const KINDS = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara", "Gün boyu ikram", "Salon kullanımı", "Diğer"];
 const groupPax = () => { const s = G.submission; const real = s.rooms.reduce((x, r) => x + r.people.length, 0) + s.days.length; return real || (Number(G.settings.estSleepers || 0) + Number(G.settings.estDays || 0)); };
 const stayDates = () => { const out = [], st = G.settings; if (!st.in) return out; const d = new Date(st.in + "T12:00:00"), e = new Date((st.out || st.in) + "T12:00:00"); while (d <= e) { out.push(isoOf(d)); d.setDate(d.getDate() + 1); } return out; };
 function drawProgram() {
@@ -516,7 +723,7 @@ $("saveSet").onclick = () => {
 };
 window.addEventListener("beforeunload", (e) => { if (dirtySub || PDIRTY) { e.preventDefault(); e.returnValue = ""; } });
 
-boot().then(() => { const m = (location.hash || "").slice(1).split("/"); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
+boot().then(() => { const m = (location.hash || "").slice(1).split("/"); if (m[0] === "depts" && !$("v-list").classList.contains("hidden")) return openDepts(m[1]); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
 </script>
 </body>
 </html>

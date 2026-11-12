@@ -265,7 +265,7 @@ const HG = (() => {
   }
   function dayPlan(groups, venues, iso) {
     const ev = events(groups, iso, iso).sort((a, b) => a.s - b.s);
-    const meals = Object.fromEntries([...MEALS, "İkram / ara"].map((m) => [m, ev.filter((e) => e.kind === m).reduce((x, e) => x + e.pax, 0)]));
+    const meals = Object.fromEntries([...MEALS, "İkram / ara", "Gün boyu ikram"].map((m) => [m, ev.filter((e) => e.kind === m).reduce((x, e) => x + e.pax, 0)]));
     const NOV = "\u0000";
     const names = [...new Set([...venues.map((v) => v.name), ...ev.map((e) => e.venue || NOV)])];
     return { meals, rows: names.map((n) => ({ venue: venues.find((v) => v.name === n) || { name: n === NOV ? t("v_no_venue") : n, kind: "salon", cap: 0, unknown: true, none: n === NOV }, key: n === NOV ? "—" : n, ev: ev.filter((e) => (e.venue || NOV) === n) })) };

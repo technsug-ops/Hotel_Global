@@ -128,3 +128,7 @@ details summary{cursor:pointer;font-weight:600;font-size:.92rem;color:var(--acce
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{.topbar,.tabs,.noprint,.sendbar{display:none!important}body{background:#fff}.card,.tile{border-color:#999;break-inside:avoid}}
+.mainnav{display:flex;gap:6px;flex-wrap:wrap}
+.mainnav .btn[aria-current="page"]{background:rgba(255,255,255,.18);border-color:#fff}
+.flag.task{align-items:flex-start}
+.flag.task select,.flag.task input{min-height:34px;padding:4px 8px}

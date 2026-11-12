@@ -145,6 +145,8 @@ export function summary(g) {
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
     confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
     ...money(g), salon: g.settings.salon || '',
+    roomTypes: (s.rooms || []).reduce((m, r) => ((m[r.type] = (m[r.type] || 0) + 1), m), {}),
+    extraBeds: (s.rooms || []).reduce((x, r) => x + (r.extra || 0), 0), cribs: (s.rooms || []).filter((r) => r.crib).length,
     schedule: (g.schedule || []).map(({ date, start, end, kind, venue, pax, title }) => ({ date, start, end, kind, venue, pax, title })),
     ...(() => {
       // liste gelene kadar doluluk ve tutar tahmini kişi sayısıyla hesaplanır
@@ -231,7 +233,7 @@ export function cleanVenues(list) {
     name: str(v.name, 60), kind: v.kind === 'restoran' ? 'restoran' : 'salon', cap: num(v.cap, 0, 2000),
   })).filter((v) => v.name && !seen.has(v.name.toLocaleLowerCase('tr')) && seen.add(v.name.toLocaleLowerCase('tr')));
 }
-export const SCHEDULE_KINDS = ['Kahvaltı', 'Öğle yemeği', 'Akşam yemeği', 'İkram / ara', 'Salon kullanımı', 'Diğer'];
+export const SCHEDULE_KINDS = ['Kahvaltı', 'Öğle yemeği', 'Akşam yemeği', 'İkram / ara', 'Gün boyu ikram', 'Salon kullanımı', 'Diğer'];
 const time = (v) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? String(v) : '');
 export function cleanSchedule(list) {
   return (Array.isArray(list) ? list : []).slice(0, 300).map((e) => ({
