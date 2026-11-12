@@ -2,7 +2,10 @@ import { requireStaff, readJSON, writeJSON, groupPath, tokenPath, newId, del, is
 
 const NOTE_CODES = ['h_rooming_saved', 'h_settings_saved'];
 
+import { notifyManager } from './_wa.js';
+
 export default async function handler(req, res) {
+  const t0 = new Date().toISOString();
   res.setHeader('Cache-Control', 'no-store');
   if (!requireStaff(req, res)) return;
   const id = req.query.id;
@@ -57,6 +60,7 @@ export default async function handler(req, res) {
     g.updatedAt = now;
     try {
       const w = await writeJSON(groupPath(id), g, cur.etag);
+      await notifyManager(g, t0);
       return res.status(200).json({ group: g, etag: w.etag });
     } catch (e) {
       if (String(e?.name || e).includes('Precondition')) return fail(res, 409, 'e_conflict');

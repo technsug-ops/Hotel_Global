@@ -8,7 +8,10 @@ async function load(token) {
   return g && g.data.token === token ? g : null;
 }
 
+import { notifyManager } from './_wa.js';
+
 export default async function handler(req, res) {
+  const t0 = new Date().toISOString();
   res.setHeader('Cache-Control', 'no-store');
   try {
     const cur = await load(req.query.t);
@@ -51,6 +54,7 @@ export default async function handler(req, res) {
     g.consents = [{ at: nowIso, name: incoming.leader.name, phone: incoming.leader.phone, mail: incoming.leader.mail }, ...(g.consents || [])].slice(0, 50);
     g.updatedAt = nowIso;
     await writeJSON(groupPath(g.id), g, cur.etag);
+    await notifyManager(g, t0);
     return res.status(200).json(pub());
   } catch (e) {
     console.error('form', e);

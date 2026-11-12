@@ -18,7 +18,7 @@ export function cleanStaff(b = {}) {
     contract: CONTRACTS.includes(b.contract) ? b.contract : 'vollzeit',
     start: date(b.start), end: date(b.end),
     rate: num(b.rate, 0, 500), weekHours: num(b.weekHours, 0, 60), vacDays: num(b.vacDays, 0, 60),
-    phone: str(b.phone, 40), mail: str(b.mail, 120), notes: str(b.notes, 1000), active: b.active !== false,
+    phone: str(b.phone, 40), mail: str(b.mail, 120), lang: ['tr', 'de', 'en'].includes(b.lang) ? b.lang : 'tr', notes: str(b.notes, 1000), active: b.active !== false,
   };
 }
 export async function allStaff() {

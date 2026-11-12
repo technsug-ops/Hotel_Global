@@ -100,7 +100,7 @@ export function cleanSettings(s = {}) {
     name: str(s.name, 120), leader: str(s.leader, 80), phone: str(s.phone, 40), mail: str(s.mail, 120),
     in: date(s.in), out: date(s.out), paymode: s.paymode === 'grup' ? 'grup' : 'kisi',
     pNight: num(s.pNight), pDay: num(s.pDay), pSingle: num(s.pSingle), deadline: num(s.deadline, 0, 60),
-    salon: str(s.salon, 80), notes: str(s.notes, 1000), source: str(s.source, 80), when: str(s.when, 80),
+    salon: str(s.salon, 80), notes: str(s.notes, 1000), source: str(s.source, 80), when: str(s.when, 80), waLang: ['tr', 'de', 'en'].includes(s.waLang) ? s.waLang : 'tr',
     estSleepers: num(s.estSleepers, 0, 1000), estDays: num(s.estDays, 0, 2000),
     confirmDays: s.confirmDays === undefined || s.confirmDays === '' ? 7 : num(s.confirmDays, 0, 120),
     callDays: s.callDays === undefined || s.callDays === '' ? 3 : num(s.callDays, 0, 60),

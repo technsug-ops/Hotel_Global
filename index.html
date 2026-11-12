@@ -19,6 +19,7 @@
     <button type="button" class="navi" id="navDash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg><span data-i18n="nav_dash"></span></button>
     <button type="button" class="navi" id="navDepts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg><span data-i18n="nav_depts"></span><span id="navTaskCount"></span></button>
     <div class="subnav" id="navDeptList"></div>
+    <button type="button" class="navi" id="navWa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg><span data-i18n="nav_wa"></span><span id="navWaCount"></span></button>
     <button type="button" class="navi hidden" id="navStaff"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.9M16 2.1a4 4 0 0 1 0 7.8"/></svg><span data-i18n="nav_staff"></span><span id="navLeaveCount"></span></button>
   </nav>
   <div class="sidefoot"><span id="langBox"></span><button type="button" class="btn ghost small hidden" id="logout" data-i18n="logout"></button></div>
@@ -145,6 +146,36 @@
     </div>
   </section>
 
+  <!-- WhatsApp -->
+  <section id="v-wa" class="hidden" style="display:grid;gap:18px">
+    <h2 data-i18n="nav_wa"></h2>
+    <div class="card" style="display:grid;gap:12px">
+      <div id="waConn"></div>
+      <div class="row" id="waChecks"></div>
+      <details><summary data-i18n="wa_setup"></summary>
+        <div style="display:grid;gap:10px;margin-top:10px"><p class="small" data-i18n="wa_setup_steps"></p>
+        <label><span data-i18n="wa_callback"></span><input readonly id="waCallback"></label></div>
+      </details>
+    </div>
+    <div class="dash2">
+      <div class="card"><h3 data-i18n="wa_in"></h3><div id="waIn" class="flags"></div></div>
+      <div class="card"><h3 data-i18n="wa_out"></h3><div id="waOut" class="flags"></div></div>
+    </div>
+    <div class="dash2">
+      <div class="card"><h3 data-i18n="wa_auto"></h3><div id="waCfg" style="display:grid;gap:8px"></div>
+        <div class="row" style="margin-top:10px"><button type="button" class="btn small" id="waCfgSave" data-i18n="wa_cfg_save"></button><button type="button" class="btn ghost small" id="waRun" data-i18n="wa_run"></button></div></div>
+      <div class="card"><h3 data-i18n="wa_test"></h3><p class="note" data-i18n="wa_test_note"></p>
+        <form id="waTest" class="grid">
+          <label><span data-i18n="wa_test_group"></span><select id="wtGroup"></select></label>
+          <label><span data-i18n="wa_test_from"></span><input id="wtFrom" inputmode="tel"></label>
+          <label><span data-i18n="wa_test_action"></span><select id="wtAction"></select></label>
+          <label><span data-i18n="wa_test_text"></span><input id="wtText" maxlength="500"></label>
+          <div><button class="btn small" type="submit" data-i18n="wa_test_send"></button></div>
+        </form></div>
+    </div>
+    <div class="card"><h3 data-i18n="wa_templates"></h3><p class="note" data-i18n="wa_tpl_note"></p><div id="waTpl" style="display:grid;gap:10px"></div></div>
+  </section>
+
   <!-- personel (yalnız müdüriyet) -->
   <section id="v-staff" class="hidden" style="display:grid;gap:18px">
     <div class="row between" style="align-items:end">
@@ -225,6 +256,11 @@
       <div class="card"><h3 data-i18n="r_pay_title"></h3><div class="tablewrap"><table id="payTable"></table></div><p class="note" data-i18n="r_pay_note"></p></div>
       <div class="card"><h3 data-i18n="r_rooms_title"></h3><div class="tablewrap"><table id="roomTable"></table></div></div>
       <div class="row noprint"><button type="button" class="btn ghost small" id="print" data-i18n="r_print"></button></div>
+      <div class="card" id="gWaCard">
+        <div class="row between"><h3 data-i18n="wa_group"></h3><div class="row"><button type="button" class="btn ghost small" data-wasend="hg_grup_linki" data-i18n="wa_send_link"></button><button type="button" class="btn ghost small" data-wasend="hg_odalama_hatirlatma" data-i18n="wa_send_rem"></button><button type="button" class="btn small" data-wasend="hg_teyit" data-i18n="wa_send_conf"></button></div></div>
+        <p class="note" data-i18n="wa_group_note"></p>
+        <div id="gWaList" class="flags"></div>
+      </div>
       <div class="card" id="gTaskCard">
         <div class="row between"><h3 data-i18n="d_group_tasks"></h3><button type="button" class="btn ghost small" id="gtNew" data-i18n="d_new_task"></button></div>
         <form id="gtForm" class="grid hidden" style="margin:10px 0">
@@ -315,8 +351,8 @@
 <script>
 const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api, dayName } = HG;
 let ROLE = null, G = null, ETAG = null, dirtySub = false, PDIRTY = false, GROUPS = [], VENUES = [], refreshTimer = null, CUR_TAB = "rapor";
-const views = ["login", "list", "todo", "dept", "staff", "detail"];
-const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); $("navStaff").setAttribute("aria-current", v === "staff" ? "page" : "false"); $("navStaff").classList.toggle("hidden", ROLE !== "mudur"); if (typeof drawNavDepts === "function" && v !== "login") drawNavDepts(); };
+const views = ["login", "list", "todo", "dept", "wa", "staff", "detail"];
+const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("mainNav").classList.toggle("hidden", v === "login"); $("navDash").setAttribute("aria-current", v === "list" ? "page" : "false"); $("navDepts").setAttribute("aria-current", v === "dept" ? "page" : "false"); $("navStaff").setAttribute("aria-current", v === "staff" ? "page" : "false"); $("navWa").setAttribute("aria-current", v === "wa" ? "page" : "false"); $("navStaff").classList.toggle("hidden", ROLE !== "mudur"); if (typeof drawNavDepts === "function" && v !== "login") drawNavDepts(); };
 $("langBox").appendChild(I18N.langSelect(rerender));
 I18N.apply();
 function rerender() {
@@ -325,6 +361,7 @@ function rerender() {
   if (!$("v-detail").classList.contains("hidden") && G) drawDetail(true);
   if (!$("v-dept").classList.contains("hidden")) drawDept();
   if (!$("v-todo").classList.contains("hidden")) drawTodoPage();
+  if (!$("v-wa").classList.contains("hidden") && window.drawWa) drawWa();
   if (!$("v-staff").classList.contains("hidden") && window.drawStaff) drawStaff();
 }
 const SETTINGS = [
@@ -333,7 +370,7 @@ const SETTINGS = [
   ["paymode", "f_paymode", [["kisi", "pay_kisi"], ["grup", "pay_grup"]]],
   ["pNight", "f_pNight", "number"], ["pDay", "f_pDay", "number"], ["pSingle", "f_pSingle", "number"],
   ["deadline", "f_deadline", "number"], ["confirmDays", "f_confirmDays", "number"], ["callDays", "f_callDays", "number"],
-  ["estSleepers", "f_estS", "number"], ["estDays", "f_estD", "number"], ["salon", "f_salon", "text"],
+  ["estSleepers", "f_estS", "number"], ["estDays", "f_estD", "number"], ["salon", "f_salon", "text"], ["waLang", "f_walang", [["tr", "wl_tr"], ["de", "wl_de"], ["en", "wl_en"]]],
 ];
 
 /* ---------- oturum ---------- */
@@ -780,7 +817,7 @@ function drawDetail(langOnly) {
   const chip = st.status === "Kesin" ? "ok" : st.status === "İptal" ? "crit" : "warn";
   $("dStatus").innerHTML = `<span class="chip ${chip}">${esc(HG.statusLabel(st.status))}</span>`;
   $("dMeta").innerHTML = `${st.in ? `<span>${esc(t("gh_dates", { a: dTR(st.in), b: dTR(st.out), n: HG.nights(st) }))}</span>` : ""}<span>${t("gh_leader")}: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}${st.mail ? " · " + esc(st.mail) : ""}</span>${st.salon ? `<span>${t("f_salon")}: ${esc(st.salon)}</span>` : ""}${st.source ? `<span>${t("gh_source")}: ${esc(st.source)}</span>` : ""}${!st.in && st.when ? `<span>${t("f_when")}: ${esc(st.when)}</span>` : ""}`;
-  drawGroupTasks();
+  drawGroupTasks(); if (window.loadGroupWa) loadGroupWa();
   const unseen = (G.alerts || []).filter((a) => !a.seen).length;
   $("alertCount").innerHTML = unseen ? `<span class="chip crit">${unseen}</span>` : "";
   renderReport({ tiles: $("tiles"), flags: $("flags"), pay: $("payTable"), roomsTable: $("roomTable") }, st, sub, G.submittedAt, () => save({ submission: sub }), G.confirmedAt);
@@ -890,8 +927,9 @@ $("saveSet").onclick = () => {
 window.addEventListener("beforeunload", (e) => { if (dirtySub || PDIRTY) { e.preventDefault(); e.returnValue = ""; } });
 
 const START_HASH = location.hash || "";
-boot().then(() => { const m = START_HASH.slice(1).split("/"); if (m[0] === "depts" && !$("v-list").classList.contains("hidden")) return openDepts(m[1]); if (m[0] === "todo" && !$("v-list").classList.contains("hidden")) return openTodo(); if (m[0] === "staff" && ROLE === "mudur" && !$("v-list").classList.contains("hidden")) return openStaff(m[1]); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
+boot().then(() => { const m = START_HASH.slice(1).split("/"); if (m[0] === "depts" && !$("v-list").classList.contains("hidden")) return openDepts(m[1]); if (m[0] === "todo" && !$("v-list").classList.contains("hidden")) return openTodo(); if (m[0] === "wa" && !$("v-list").classList.contains("hidden")) return openWa(); if (m[0] === "staff" && ROLE === "mudur" && !$("v-list").classList.contains("hidden")) return openStaff(m[1]); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
 </script>
 <script src="/personel.js"></script>
+<script src="/wa-ui.js"></script>
 </body>
 </html>

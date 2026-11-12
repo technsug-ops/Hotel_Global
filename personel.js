@@ -104,6 +104,7 @@ function staffForm(p) {
     ${f("start", "sf_start", "date")}${f("end", "sf_end", "date")}
     ${f("rate", "sf_rate", "number", 'min="0" step="0.01"')}${f("weekHours", "sf_hours", "number", 'min="0" step="0.5"')}${f("vacDays", "sf_vac", "number", 'min="0"')}
     ${f("phone", "sf_phone")}${f("mail", "sf_mail", "email")}
+    <label><span>${t("sf_lang")}</span><select id="sp_lang">${o(["tr", "de", "en"], p.lang || "tr", (v) => t("wl_" + v))}</select></label>
     <label><span>${t("sf_active")}</span><select id="sp_active"><option value="1"${p.active !== false ? " selected" : ""}>${t("sf_active")}</option><option value="0"${p.active === false ? " selected" : ""}>${t("sf_left")}</option></select></label>
     <label style="grid-column:1/-1"><span>${t("sf_notes")}</span><textarea id="sp_notes" rows="2" maxlength="1000">${esc(p.notes || "")}</textarea></label>
     <div class="row"><button class="btn" type="submit">${t("sf_save")}</button></div>`;
@@ -136,7 +137,7 @@ async function showLink(id, regen = false) {
 $("sfForm").onsubmit = async (e) => {
   e.preventDefault();
   const g = (k) => $("sp_" + k).value;
-  const body = { name: g("name"), dept: g("dept"), role: g("role"), contract: g("contract"), start: g("start"), end: g("end"), rate: Number(g("rate")), weekHours: Number(g("weekHours")), vacDays: Number(g("vacDays")), phone: g("phone"), mail: g("mail"), notes: g("notes"), active: g("active") === "1" };
+  const body = { name: g("name"), dept: g("dept"), role: g("role"), contract: g("contract"), start: g("start"), end: g("end"), rate: Number(g("rate")), weekHours: Number(g("weekHours")), vacDays: Number(g("vacDays")), phone: g("phone"), mail: g("mail"), lang: g("lang"), notes: g("notes"), active: g("active") === "1" };
   const id = $("sfForm").dataset.id;
   try {
     if (id) await api(`/api/staff?id=${encodeURIComponent(id)}`, { method: "PUT", body: { ...body, etag: $("sfForm").dataset.etag } });

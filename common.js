@@ -31,6 +31,7 @@ const HG = (() => {
     if ("note" in p) p.note = p.note ? " — " + p.note : "";
     if (e.code === "h_status") { p.a = statusLabel(p.a); p.b = statusLabel(p.b); }
     if (e.code === "h_call") p.by = p.by || "—";
+    if (e.code === "h_wa_out") { p.t = t("wt_" + p.t); p.s = t("ws_" + p.s); p.by = p.by || "—"; }
     return t(e.code, p);
   }
 
