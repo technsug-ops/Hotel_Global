@@ -102,13 +102,12 @@
       <label style="max-width:280px"><span data-i18n="d_your_name"></span><input id="myName" maxlength="60" autocomplete="name"></label>
     </div>
     <nav class="tabs" role="tablist" id="deptTabs"></nav>
-    <div class="dash2">
-      <div style="display:grid;gap:18px;align-content:start">
-        <div class="card"><h3 data-i18n="d_auto"></h3><p class="note" data-i18n="d_auto_note"></p><div id="autoItems" class="flags"></div></div>
-        <div class="card"><div class="row between"><h3 data-i18n="dt_team"></h3><button type="button" class="btn ghost small" id="dlNew" data-i18n="dt_request"></button></div>
-          <form id="dlForm" class="grid hidden subcard" style="margin:10px 0"></form>
-          <div class="small muted" data-i18n="dt_absent" style="margin-bottom:6px"></div><div id="dlList" class="flags"></div></div>
-      </div>
+    <div class="card hidden" id="teamView"><div class="row between"><h3 data-i18n="dt_team"></h3><button type="button" class="btn small" id="dlNew" data-i18n="dt_request"></button></div>
+      <p class="note" data-i18n="dt_note"></p>
+      <form id="dlForm" class="grid hidden subcard" style="margin:10px 0"></form>
+      <div class="small muted" data-i18n="dt_absent" style="margin:6px 0"></div><div id="dlList" class="flags"></div></div>
+    <div class="dash2" id="deptWork">
+      <div class="card"><h3 data-i18n="d_auto"></h3><p class="note" data-i18n="d_auto_note"></p><div id="autoItems" class="flags"></div></div>
       <div class="card">
         <div class="row between"><h3 data-i18n="d_tasks"></h3><div class="row"><label class="row small" style="gap:6px"><input type="checkbox" id="showDone" style="width:auto"><span data-i18n="d_show_done"></span></label><button type="button" class="btn small" id="dtNew" data-i18n="d_new_task"></button></div></div>
         <form id="dtForm" class="grid hidden" style="margin:10px 0">
@@ -484,7 +483,7 @@ $("back").onclick = openList;
 const DEPTS = ["resepsiyon", "rezervasyon", "restoran", "mutfak", "haus", "salon", "mudur"];
 const deptLabel = (d) => (d ? t("dept_" + d) : "—");
 let TASKS = [], CUR_DEPT = "resepsiyon";
-try { CUR_DEPT = localStorage.getItem("hg_dept") || CUR_DEPT; if (!DEPTS.includes(CUR_DEPT)) CUR_DEPT = "resepsiyon"; } catch (e) {}
+try { CUR_DEPT = localStorage.getItem("hg_dept") || CUR_DEPT; if (!DEPTS.includes(CUR_DEPT) && CUR_DEPT !== "ekip") CUR_DEPT = "resepsiyon"; } catch (e) {}
 const myName = () => $("myName").value.trim();
 try { $("myName").value = localStorage.getItem("hg_name") || ""; } catch (e) {}
 $("myName").onchange = () => { try { localStorage.setItem("hg_name", myName()); } catch (e) {} };
@@ -618,7 +617,7 @@ function autoItems(dept, days) {
 }
 
 async function openDepts(dept) {
-  if (dept && DEPTS.includes(dept)) CUR_DEPT = dept;
+  if (dept && (DEPTS.includes(dept) || dept === "ekip")) CUR_DEPT = dept;
   try { localStorage.setItem("hg_dept", CUR_DEPT); } catch (e) {}
   showView("dept"); G = null; try { history.replaceState(null, "", "#depts/" + CUR_DEPT); } catch (e) {}
   drawDept();
@@ -627,7 +626,10 @@ async function openDepts(dept) {
 function drawDept() {
   I18N.apply($("v-dept"));
   const counts = Object.fromEntries(DEPTS.map((d) => [d, TASKS.filter((x) => x.dept === d && x.status !== "bitti")]));
-  $("deptTabs").innerHTML = DEPTS.map((d) => `<button role="tab" type="button" data-dept="${d}" aria-selected="${d === CUR_DEPT}">${esc(deptLabel(d))}${counts[d].length ? ` <span class="chip ${counts[d].some(isOverdue) ? "crit" : "info"}">${counts[d].length}</span>` : ""}</button>`).join("");
+  $("deptTabs").innerHTML = DEPTS.map((d) => `<button role="tab" type="button" data-dept="${d}" aria-selected="${d === CUR_DEPT}">${esc(deptLabel(d))}${counts[d].length ? ` <span class="chip ${counts[d].some(isOverdue) ? "crit" : "info"}">${counts[d].length}</span>` : ""}</button>`).join("") + `<button role="tab" type="button" data-dept="ekip" aria-selected="${CUR_DEPT === "ekip"}">${esc(t("dt_team"))}</button>`;
+  const team = CUR_DEPT === "ekip";
+  $("teamView").classList.toggle("hidden", !team); $("deptWork").classList.toggle("hidden", team);
+  if (team) { if (window.drawDeptTeam) drawDeptTeam(); return; }
   const days = [0, 1, 2].map(plusIso), items = autoItems(CUR_DEPT, days);
   let lastDay = null;
   $("autoItems").innerHTML = items.length ? items.map((x) => {
@@ -635,7 +637,6 @@ function drawDept() {
     return `${head}<div class="flag ${x.level}">${x.time && x.time !== "00:00" ? `<span class="chip ${x.level === "crit" ? "crit" : x.level === "warn" ? "warn" : "info"}">${esc(x.time)}</span>` : ""}<span>${x.g ? `<b>${link(x.g, CUR_DEPT === "rezervasyon" || CUR_DEPT === "mudur" ? "rapor" : "program")}</b> · ` : ""}${esc(x.text)}</span></div>`;
   }).join("") : `<span class="chip ok">${t("d_auto_none")}</span>`;
   const list = TASKS.filter((x) => (x.dept === CUR_DEPT || x.from === CUR_DEPT) && ($("showDone").checked || x.status !== "bitti")).sort(sortTasks);
-  if (window.drawDeptTeam) drawDeptTeam();
   $("taskList").innerHTML = list.length ? list.map((x) => taskHTML(x)).join("") : `<span class="chip ok">${t("d_none")}</span>`;
 }
 $("deptTabs").onclick = (e) => { const b = e.target.closest("[data-dept]"); if (b) { $("dtForm").classList.add("hidden"); openDepts(b.dataset.dept); } };

@@ -214,11 +214,25 @@ async function loadTeam() {
   try { const [s, l] = await Promise.all([api("/api/staff"), api("/api/leave")]); TEAM = s.staff || []; TEAM_LEAVE = l.leave || []; if (ROLE === "mudur") { STAFF = s.staff; LEAVE = l.leave; drawLeaveBadge(); } }
   catch (e) { if (e.status === 401) throw e; }
 }
+/* Bölümler sayfasındaki ayrı "Ekip ve devamsızlık" sekmesi: tüm birimler */
+const teamPeople = () => TEAM.filter((p) => p.active !== false).sort((a, b) => DEPTS.indexOf(a.dept) - DEPTS.indexOf(b.dept) || a.name.localeCompare(b.name));
 function drawDeptTeam() {
-  const people = TEAM.filter((p) => p.dept === CUR_DEPT && p.active !== false), ids = new Set(people.map((p) => p.id));
-  const until = plusIso(14), list = TEAM_LEAVE.filter((x) => ids.has(x.staffId) && x.to >= todayIso() && x.from <= until && (x.status === undefined || counts(x))).sort((a, b) => a.from.localeCompare(b.from));
-  $("dlList").innerHTML = !people.length ? `<span class="muted small">${t("dt_no_staff")}</span>` : list.length ? list.map((x) => `<div class="flag info"><span class="chip info">${t("away")}</span><span><b>${esc(pName(x.staffId))}</b> · ${esc(dayName(x.from))}${x.to !== x.from ? " – " + esc(dayName(x.to)) : ""}</span></div>`).join("") : `<span class="chip ok">${t("dt_none_absent")}</span>`;
+  const people = teamPeople(), byId = Object.fromEntries(people.map((p) => [p.id, p]));
+  const until = plusIso(14), list = TEAM_LEAVE.filter((x) => byId[x.staffId] && x.to >= todayIso() && x.from <= until && (x.status === undefined || counts(x)));
   $("dlNew").disabled = !people.length;
+  if (!people.length) { $("dlList").innerHTML = `<span class="muted small">${t("dt_no_staff")}</span>`; return; }
+  const html = DEPTS.map((d) => {
+    const rows = list.filter((x) => byId[x.staffId].dept === d).sort((a, b) => a.from.localeCompare(b.from));
+    if (!rows.length) return "";
+    return `<div class="small" style="margin-top:6px"><b>${esc(deptLabel(d))}</b></div>` + rows.map((x) => `<div class="flag info"><span class="chip info">${t("away")}</span><span><b>${esc(byId[x.staffId].name)}</b> · ${esc(dayName(x.from))}${x.to !== x.from ? " – " + esc(dayName(x.to)) : ""}</span></div>`).join("");
+  }).join("");
+  $("dlList").innerHTML = html || `<span class="chip ok">${t("dt_none_absent")}</span>`;
 }
-$("dlNew").onclick = () => { const f = $("dlForm"); f.innerHTML = leaveFormHTML(TEAM.filter((p) => p.dept === CUR_DEPT && p.active !== false), false); f.classList.toggle("hidden"); };
+$("dlNew").onclick = () => {
+  const f = $("dlForm");
+  f.innerHTML = leaveFormHTML(teamPeople(), false);
+  const sel = f.querySelector('[name="staffId"]');
+  sel.innerHTML = DEPTS.map((d) => { const ps = teamPeople().filter((p) => p.dept === d); return ps.length ? `<optgroup label="${esc(deptLabel(d))}">${ps.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</optgroup>` : ""; }).join("");
+  f.classList.toggle("hidden");
+};
 $("dlForm").onsubmit = async (e) => { e.preventDefault(); if (needName()) return; try { await submitLeave(e.currentTarget, false); toast(t("dt_sent")); await loadTeam(); drawDeptTeam(); } catch (er) { authFail(er); } };
