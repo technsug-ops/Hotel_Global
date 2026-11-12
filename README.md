@@ -1,35 +1,28 @@
 # Hotel Global — Grup Operasyonu
 
-Otel Global için grup operasyonu web uygulaması (TechNS UG). Vercel'de çalışır, veriler Vercel Blob'da (özel erişim, Frankfurt / fra1) tutulur.
+Otel Global için grup operasyonu web uygulaması (TechNS UG). Vercel'de çalışır, veriler Vercel Blob'da (özel erişim, Frankfurt / fra1) tutulur. Arayüz üç dillidir: Türkçe, Deutsch, English.
 
-## Modül 1 — Odalama formu ve grup bilgi raporu
+## Sayfalar
 
-| Sayfa | Kim kullanır | Ne yapar |
+| Sayfa | Kim | Ne yapar |
 |---|---|---|
-| `/` | Resepsiyon / yönetim (şifreli) | Grup oluşturur, grup sorumlusu linkini alır, odalamayı düzeltir, oda no atar, tahsilatı işaretler, uyarıları görür |
-| `/g.html?t=…` | Grup sorumlusu (gruba özel link) | Odaları, kişileri, yaş gruplarını, günübirlik katılımcıları ve fatura bilgilerini girer |
+| `/` | Resepsiyon / yönetim (şifreli) | Gösterge paneli, grup kaydı, teyit araması, odalama, program ve mekanlar, tahsilat, uyarılar |
+| `/g.html?t=…&lang=de` | Grup sorumlusu (gruba özel link) | Odalar, kişiler, günübirlik, fatura; dış liste içe aktarma |
 
-Kurallar: çocuk 0–2 ücretsiz · 3–7 %50 · 8+ tam; tek kişilik oda farkı; oda kapasitesi, oda tipi stoğu (DBZ, DZ, EZ, ZBZ, SUP FAM, VBZ) ve ek yatak (32) kontrolü.
+## Dosyalar
 
-Uyarılar: grup sorumlusu formu değiştirirse, son tarihten sonra gönderirse veya ödeme işaretlendikten sonra liste değişirse grupta uyarı oluşur.
+- `i18n.js` — TR/DE/EN sözlük, `t(key, params)`, dil seçici. Yeni metin = yeni anahtar, üç dilde.
+- `common.js` — kurallar (kapasite, fiyat, teyit, mekan çakışması), form editörü, rapor
+- `importer.js` — Google Sheets / Excel / CSV içe aktarma
+- `style.css` — arayüz
+- `api/*` — `login`, `groups`, `group`, `form`, `sheet`, `venues`; `_lib.js` ortak
 
-## Yapı
+Sunucu dil bağımsızdır: hatalar `{ code }`, geçmiş ve uyarılar `{ code, p }` olarak saklanır; arayüz seçili dilde gösterir.
 
-- `index.html`, `g.html`, `common.js`, `style.css` — arayüz
-- `api/login.js` — panel girişi (HMAC imzalı, HttpOnly çerez, 12 saat)
-- `api/groups.js` — grup listesi ve yeni grup
-- `api/group.js` — grup oku / güncelle (ETag ile eşzamanlılık koruması)
-- `api/form.js` — grup sorumlusu formu (token ile)
-- Depolama: `groups/{id}.json`, `tokens/{token}.json`
+## Ortam değişkenleri
 
-## Ortam değişkenleri (Vercel)
-
-- `STAFF_PASSWORD` — panel şifresi
-- `SESSION_SECRET` — oturum imza anahtarı
-- `BLOB_READ_WRITE_TOKEN` — Blob deposu (otomatik)
+`STAFF_PASSWORD`, `SESSION_SECRET`, `BLOB_READ_WRITE_TOKEN`
 
 ## Canlı kullanımdan önce
 
-- Vercel Pro plan (ticari kullanım)
-- Vercel ve diğer sağlayıcılarla veri işleme sözleşmesi (AVV), gizlilik bildirimi
-- Kişi bazında kullanıcı hesapları, e-posta bildirimi (modül 2)
+Vercel Pro plan · AVV · gizlilik bildirimi ve Impressum · veri silme kuralı · kişi bazında kullanıcılar · e-posta bildirimi

@@ -46,7 +46,7 @@ export function isStaff(req) {
 }
 export function requireStaff(req, res) {
   if (isStaff(req)) return true;
-  res.status(401).json({ error: 'Oturum gerekli' });
+  res.status(401).json({ error: 'Oturum gerekli', code: 'e_auth' });
   return false;
 }
 
@@ -156,15 +156,22 @@ export function summary(g) {
     confirmedAt: g.confirmedAt || null, pending: !!g.pending, lastCall: (g.calls || [])[0] || null, leader: g.settings.leader, phone: g.settings.phone,
   };
 }
-export function pushAlert(g, text) {
+/* uyarı ve geçmiş kayıtları dil bağımsız: code + p (parametreler); text yalnız eski kayıtlar ve yedek için */
+export function pushAlert(g, code, p = {}, text = '') {
   g.alerts = g.alerts || [];
-  g.alerts.unshift({ at: new Date().toISOString(), text, seen: false });
+  g.alerts.unshift({ at: new Date().toISOString(), code, p, text, seen: false });
   g.alerts = g.alerts.slice(0, 50);
 }
+export function addHistory(g, by, code, p = {}, text = '') {
+  g.history = [{ at: new Date().toISOString(), by, code, p, text }, ...(g.history || [])].slice(0, 200);
+}
+export function fail(res, status, code, text) { return res.status(status).json({ error: text || code, code }); }
 
-export const CALL_RESULTS = ['Kesinleşti', 'Değişiklik var', 'Ulaşılamadı', 'Tekrar aranacak', 'İptal'];
+export const CALL_RESULTS = ['confirmed', 'changed', 'unreachable', 'callback', 'cancelled'];
+const OLD_RESULTS = { 'Kesinleşti': 'confirmed', 'Değişiklik var': 'changed', 'Ulaşılamadı': 'unreachable', 'Tekrar aranacak': 'callback', 'İptal': 'cancelled' };
 export function cleanCall(c = {}) {
-  return { result: CALL_RESULTS.includes(c.result) ? c.result : 'Tekrar aranacak', note: str(c.note, 500), by: str(c.by, 60) };
+  const r = OLD_RESULTS[c.result] || c.result;
+  return { result: CALL_RESULTS.includes(r) ? r : 'callback', note: str(c.note, 500), by: str(c.by, 60) };
 }
 
 /* grup sorumlusunun listesini personel alanlarını (ödendi, verildi, oda no) koruyarak uygula */
@@ -181,7 +188,7 @@ export function roomingDeadline(settings) {
   d.setDate(d.getDate() - (Number(settings.deadline) || 0));
   return d;
 }
-export const describe = (sub) => `${sub.rooms.length} oda, ${sub.rooms.reduce((x, r) => x + r.people.length, 0)} konaklayan, ${sub.days.length} günübirlik`;
+export const describe = (sub) => ({ r: sub.rooms.length, s: sub.rooms.reduce((x, r) => x + r.people.length, 0), d: sub.days.length });
 
 const BEDS = { EZ: 1, DZ: 2, ZBZ: 2, DBZ: 3, VBZ: 4, 'SUP FAM': 5 };
 export function capacityErrors(sub) {
@@ -189,8 +196,8 @@ export function capacityErrors(sub) {
   sub.rooms.forEach((r, i) => {
     const need = r.people.filter((p) => p.a !== 'C0').length, cap = BEDS[r.type] + (r.extra || 0);
     const babies = r.people.length - need;
-    if (need > cap) out.push(`Oda ${i + 1} (${r.type}): ${need} kişi, ${cap} yatak`);
-    if (babies > 2) out.push(`Oda ${i + 1}: en fazla 2 bebek (0–2 yaş)`);
+    if (need > cap) out.push(`#${i + 1} ${r.type}: ${need}/${cap}`);
+    if (babies > 2) out.push(`#${i + 1}: 0–2 > 2`);
   });
   return out;
 }

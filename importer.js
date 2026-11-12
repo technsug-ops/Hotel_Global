@@ -1,6 +1,6 @@
 /* Hotel Global — dışarıda hazırlanmış katılımcı listesini (Google Sheets / Excel / CSV) içe aktarma */
 const HGImport = (() => {
-  const { AGES, esc, toast, api } = HG;
+  const { esc, toast, api, ageLabel } = HG;
 
   /* ---------- ayrıştırma ---------- */
   function parseTable(text) {
@@ -22,15 +22,15 @@ const HGImport = (() => {
   }
   const norm = (s) => String(s || "").toLocaleLowerCase("tr").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ı/g, "i").replace(/[^a-z0-9]+/g, " ").trim();
   const FIELDS = [
-    ["name", "Ad Soyad (zorunlu)", ["ad soyad", "adi soyadi", "adiniz soyadiniz", "isim soyisim", "isim", "name", "katilimci", "misafir", "full name", "vorname nachname"]],
-    ["first", "Ad (ayrı sütunsa)", ["ad", "adi", "adiniz", "first name", "vorname"]],
-    ["last", "Soyad (ayrı sütunsa)", ["soyad", "soyadi", "soyadiniz", "last name", "nachname", "surname"]],
-    ["age", "Yaş / yaş grubu / doğum yılı", ["yas", "yasi", "yas grubu", "age", "alter", "dogum", "dogum yili", "dogum tarihi", "geburtsjahr"]],
-    ["stay", "Konaklama (evet / hayır)", ["konaklama", "konaklama talebi", "yatili", "kalacak", "otel", "ubernachtung", "overnight", "gunubirlik"]],
-    ["room", "Oda / aile (aynı değer = aynı oda)", ["oda", "oda no", "aile", "room", "zimmer", "oda arkadasi", "familie"]],
-    ["mail", "E-posta", ["e posta", "eposta", "email", "e mail", "mail", "e posta adresi"]],
-    ["invoice", "Fatura istiyor (evet / hayır)", ["fatura", "fatura istiyor", "invoice", "rechnung"]],
-    ["inv", "Fatura adı / adresi", ["fatura adresi", "fatura bilgileri", "firma", "rechnungsadresse", "billing address"]],
+    ["name", "im_f_name", ["ad soyad", "adi soyadi", "adiniz soyadiniz", "isim soyisim", "isim", "name", "katilimci", "misafir", "full name", "vorname nachname"]],
+    ["first", "im_f_first", ["ad", "adi", "adiniz", "first name", "vorname"]],
+    ["last", "im_f_last", ["soyad", "soyadi", "soyadiniz", "last name", "nachname", "surname"]],
+    ["age", "im_f_age", ["yas", "yasi", "yas grubu", "age", "alter", "dogum", "dogum yili", "dogum tarihi", "geburtsjahr"]],
+    ["stay", "im_f_stay", ["konaklama", "konaklama talebi", "yatili", "kalacak", "otel", "ubernachtung", "overnight", "gunubirlik"]],
+    ["room", "im_f_room", ["oda", "oda no", "aile", "room", "zimmer", "oda arkadasi", "familie"]],
+    ["mail", "im_f_mail", ["e posta", "eposta", "email", "e mail", "mail", "e posta adresi"]],
+    ["invoice", "im_f_invoice", ["fatura", "fatura istiyor", "invoice", "rechnung"]],
+    ["inv", "im_f_inv", ["fatura adresi", "fatura bilgileri", "firma", "rechnungsadresse", "billing address"]],
   ];
   function guess(headers) {
     const h = headers.map(norm), used = new Set(), map = {};
@@ -109,54 +109,54 @@ const HGImport = (() => {
   /* ---------- arayüz ---------- */
   function mount(container, { getSub, onApply, token }) {
     container.innerHTML = `
-      <div class="row" style="gap:6px" role="tablist" aria-label="İçe aktarma yöntemi">
-        <button type="button" class="btn small" data-m="paste" aria-selected="true">Tablodan yapıştır</button>
-        <button type="button" class="btn ghost small" data-m="link">Google Sheets linki</button>
-        <button type="button" class="btn ghost small" data-m="file">CSV dosyası</button>
+      <div class="seg" role="tablist" aria-label="${esc(t("import_title"))}">
+        <button type="button" data-m="paste" aria-selected="true">${t("im_paste")}</button>
+        <button type="button" data-m="link" aria-selected="false">${t("im_link")}</button>
+        <button type="button" data-m="file" aria-selected="false">${t("im_file")}</button>
       </div>
-      <div data-p="paste"><label>Google Sheets veya Excel'de başlık satırı dahil tabloyu seçin, kopyalayın (Ctrl+C) ve buraya yapıştırın (Ctrl+V)<textarea rows="5" class="imp-paste" placeholder="Ad Soyad	Yaş	Konaklama	Oda&#10;Ahmet Yılmaz	34	Evet	1&#10;Ayşe Yılmaz	32	Evet	1"></textarea></label></div>
-      <div data-p="link" class="hidden"><label>Tablonun linki (Paylaş → Bağlantıya sahip olan herkes → Görüntüleyen)<input class="imp-link" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0"></label></div>
-      <div data-p="file" class="hidden"><label>Google Sheets'te Dosya → İndir → CSV ile kaydettiğiniz dosya<input type="file" class="imp-file" accept=".csv,.tsv,.txt,text/csv"></label></div>
-      <div class="row"><button type="button" class="btn small imp-read">Listeyi oku</button><span class="small muted imp-msg"></span></div>
+      <div data-p="paste"><label>${t("im_paste_label")}<textarea rows="5" class="imp-paste" placeholder="Ad Soyad&#9;Yaş&#9;Konaklama&#9;Oda&#10;Ahmet Yılmaz&#9;34&#9;Evet&#9;1"></textarea></label></div>
+      <div data-p="link" class="hidden"><label>${t("im_link_label")}<input class="imp-link" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0"></label></div>
+      <div data-p="file" class="hidden"><label>${t("im_file_label")}<input type="file" class="imp-file" accept=".csv,.tsv,.txt,text/csv"></label></div>
+      <div class="row"><button type="button" class="btn small imp-read">${t("im_read")}</button><span class="small muted imp-msg"></span></div>
       <div class="imp-map hidden" style="display:grid;gap:12px"></div>`;
     let mode = "paste", rows = [], map = {};
-    const q = (s) => container.querySelector(s);
+    const q = (sel) => container.querySelector(sel);
     container.querySelectorAll("[data-m]").forEach((b) => (b.onclick = () => {
       mode = b.dataset.m;
-      container.querySelectorAll("[data-m]").forEach((x) => { const on = x === b; x.className = "btn small" + (on ? "" : " ghost"); x.setAttribute("aria-selected", on); });
+      container.querySelectorAll("[data-m]").forEach((x) => x.setAttribute("aria-selected", x === b));
       container.querySelectorAll("[data-p]").forEach((p) => p.classList.toggle("hidden", p.dataset.p !== mode));
     }));
     q(".imp-read").onclick = async () => {
-      const msg = q(".imp-msg"); msg.textContent = "Okunuyor…";
+      const msg = q(".imp-msg"); msg.textContent = t("im_reading");
       try {
         let text = "";
         if (mode === "paste") text = q(".imp-paste").value;
-        else if (mode === "file") { const f = q(".imp-file").files[0]; if (!f) throw new Error("Dosya seçin."); if (f.size > 1e6) throw new Error("Dosya 1 MB'tan büyük."); text = await f.text(); }
+        else if (mode === "file") { const f = q(".imp-file").files[0]; if (!f) throw new Error(t("im_need_file")); if (f.size > 1e6) throw new Error(t("im_too_big")); text = await f.text(); }
         else text = (await api("/api/sheet", { method: "POST", body: { url: q(".imp-link").value, t: token } })).csv;
         rows = parseTable(text);
-        if (rows.length < 2) throw new Error("Başlık satırı ve en az bir kişi satırı gerekli.");
-        map = guess(rows[0]); msg.textContent = `${rows.length - 1} satır okundu.`; drawMap();
+        if (rows.length < 2) throw new Error(t("im_need_rows"));
+        map = guess(rows[0]); msg.textContent = t("im_rows", { n: rows.length - 1 }); drawMap();
       } catch (e) { msg.textContent = ""; toast(e.message); }
     };
     function drawMap() {
       const box = q(".imp-map"); box.classList.remove("hidden");
-      const opts = [`<option value="">— yok —</option>`, ...rows[0].map((h, i) => `<option value="${i}">${esc(h || "Sütun " + (i + 1))}</option>`)].join("");
-      box.innerHTML = `<h3>Sütun eşleştirme</h3><p class="note">Sütunlar otomatik tanındı. Yanlış olanı düzeltin.</p>
-        <div class="grid">${FIELDS.map(([k, label]) => `<label>${label}<select data-f="${k}">${opts}</select></label>`).join("")}
-          <label>Konaklama sütunu yoksa<select class="imp-stay"><option value="stay">Herkes konaklıyor</option><option value="day">Herkes günübirlik</option></select></label>
-          <label>Oda sütunu yoksa<select class="imp-room"><option value="double">İkişer kişi (ZBZ)</option><option value="single">Herkes tek (EZ)</option></select></label>
-          <label>Mevcut liste<select class="imp-mode"><option value="append">Mevcut listeye ekle</option><option value="replace">Mevcut listenin yerine koy</option></select></label>
+      const opts = [`<option value="">${t("none")}</option>`, ...rows[0].map((h, i) => `<option value="${i}">${esc(h || t("im_col", { i: i + 1 }))}</option>`)].join("");
+      box.innerHTML = `<h3>${t("im_map")}</h3><p class="note">${t("im_map_note")}</p>
+        <div class="grid">${FIELDS.map(([k, label]) => `<label>${t(label)}<select data-f="${k}">${opts}</select></label>`).join("")}
+          <label>${t("im_nostay")}<select class="imp-stay"><option value="stay">${t("im_all_stay")}</option><option value="day">${t("im_all_day")}</option></select></label>
+          <label>${t("im_noroom")}<select class="imp-room"><option value="double">${t("im_double")}</option><option value="single">${t("im_single")}</option></select></label>
+          <label>${t("im_mode")}<select class="imp-mode"><option value="append">${t("im_append")}</option><option value="replace">${t("im_replace")}</option></select></label>
         </div>
         <div class="imp-prev small"></div>
-        <div class="row"><button type="button" class="btn imp-apply">İçe aktar</button></div>`;
-      box.querySelectorAll("[data-f]").forEach((s) => { s.value = map[s.dataset.f] ?? ""; s.onchange = () => { map[s.dataset.f] = s.value === "" ? undefined : Number(s.value); prev(); }; });
+        <div class="row"><button type="button" class="btn imp-apply">${t("im_apply")}</button></div>`;
+      box.querySelectorAll("[data-f]").forEach((sel) => { sel.value = map[sel.dataset.f] ?? ""; sel.onchange = () => { map[sel.dataset.f] = sel.value === "" ? undefined : Number(sel.value); prev(); }; });
       box.querySelector(".imp-stay").onchange = prev; box.querySelector(".imp-room").onchange = prev;
       box.querySelector(".imp-apply").onclick = () => {
-        const r = result(); if (!r.total) return toast("İçe aktarılacak kişi yok: Ad Soyad sütununu seçin.");
+        const r = result(); if (!r.total) return toast(t("im_none"));
         const sub = getSub();
         if (q(".imp-mode").value === "replace") { sub.rooms = r.rooms; sub.days = r.days; }
         else { sub.rooms.push(...r.rooms); sub.days.push(...r.days); }
-        onApply(r); container.innerHTML = ""; toast(`${r.total} kişi içe aktarıldı. Oda dağılımını kontrol edip kaydedin.`);
+        onApply(r); container.innerHTML = ""; toast(t("im_done", { n: r.total }));
       };
       prev();
     }
@@ -164,9 +164,10 @@ const HGImport = (() => {
     function prev() {
       const r = result(), sl = r.rooms.reduce((x, o) => x + o.people.length, 0);
       const types = {}; r.rooms.forEach((o) => (types[o.type] = (types[o.type] || 0) + 1));
-      q(".imp-prev").innerHTML = `<div class="flag ${r.total ? "" : "warn"}" style="background:var(--accent-soft)"><span><b>${r.total}</b> kişi → <b>${sl}</b> konaklayan, <b>${r.rooms.length}</b> oda (${Object.entries(types).map(([k, v]) => `${esc(k)} ×${v}`).join(", ") || "—"}), <b>${r.days.length}</b> günübirlik${r.skipped.length ? ` · adı boş olduğu için atlanan satır: ${r.skipped.slice(0, 10).join(", ")}${r.skipped.length > 10 ? "…" : ""}` : ""}</span></div>
-        <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Ad Soyad</th><th>Yaş grubu</th><th>Konaklama</th><th>Oda</th></tr></thead><tbody>${r.rooms.slice(0, 6).flatMap((o, i) => o.people.map((p) => `<tr><td>${esc(p.n)}</td><td>${AGES[p.a].label}</td><td>Evet</td><td>${i + 1} · ${o.type}</td></tr>`)).join("")}${r.days.slice(0, 5).map((p) => `<tr><td>${esc(p.n)}</td><td>${AGES[p.a].label}</td><td>Günübirlik</td><td>—</td></tr>`).join("")}</tbody></table></div>
-        <p class="note">Önizleme ilk birkaç satırı gösterir.</p>`;
+      const sk = r.skipped.length ? t("im_skipped", { l: r.skipped.slice(0, 10).join(", ") + (r.skipped.length > 10 ? "…" : "") }) : "";
+      q(".imp-prev").innerHTML = `<div class="flag info"><span>${t("im_prev", { t: r.total, s: sl, r: r.rooms.length, types: Object.entries(types).map(([k, v]) => `${esc(k)} ×${v}`).join(", ") || "—", d: r.days.length })}${esc(sk)}</span></div>
+        <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>${t("full_name")}</th><th>${t("im_age_group")}</th><th>${t("im_overnight")}</th><th>${t("c_room")}</th></tr></thead><tbody>${r.rooms.slice(0, 6).flatMap((o, i) => o.people.map((p) => `<tr><td>${esc(p.n)}</td><td>${ageLabel(p.a)}</td><td>${t("yes")}</td><td>${i + 1} · ${o.type}</td></tr>`)).join("")}${r.days.slice(0, 5).map((p) => `<tr><td>${esc(p.n)}</td><td>${ageLabel(p.a)}</td><td>${t("day_guest")}</td><td>—</td></tr>`).join("")}</tbody></table></div>
+        <p class="note">${t("im_prev_note")}</p>`;
     }
   }
   return { mount, parseTable, guess, build };

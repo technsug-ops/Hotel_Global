@@ -4,84 +4,116 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Odalama Formu · Otel Global</title>
+<title>Hotel Global</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div><h1>Otel Global</h1><div class="muted" id="grpLine">Yükleniyor…</div></div>
-  </header>
-  <div id="err" class="card hidden"><h2>Form açılamadı</h2><p id="errMsg"></p><p class="note">Linki size gönderen otel çalışanıyla iletişime geçin.</p></div>
-  <main id="app" class="hidden" style="display:grid;gap:18px">
-    <div class="card">
-      <h2>Odalama ve katılımcı formu</h2>
-      <div id="intro" class="note"></div>
-      <div id="status"></div>
+<header class="topbar"><div class="in">
+  <div class="brand"><b data-i18n="app_name"></b><span id="grpLine" data-i18n="loading"></span></div>
+  <span id="langBox"></span>
+</div></header>
+
+<main class="wrap">
+  <div id="err" class="card hidden"><h2 data-i18n="gf_error"></h2><p id="errMsg"></p><p class="note" data-i18n="gf_error_note"></p></div>
+
+  <div id="app" class="hidden" style="display:grid;gap:20px">
+    <section class="card">
+      <h2 data-i18n="gf_title"></h2>
+      <p id="intro" class="note" style="max-width:none"></p>
+      <ol class="steps" id="steps"></ol>
+      <div id="status" class="flags"></div>
+    </section>
+
+    <section class="card" aria-labelledby="s1">
+      <h3 id="s1"><span class="stepnum">1</span><span data-i18n="gf_you"></span></h3>
       <div class="grid">
-        <label>Adınız<input id="f_name" autocomplete="name"></label>
-        <label>Telefon<input id="f_phone" placeholder="+49 …" autocomplete="tel"></label>
-        <label>E-posta<input type="email" id="f_mail" placeholder="ad@ornek.de" autocomplete="email"></label>
+        <label><span data-i18n="gf_name"></span><input id="f_name" autocomplete="name"></label>
+        <label><span data-i18n="gf_phone"></span><input id="f_phone" placeholder="+49 …" autocomplete="tel" inputmode="tel"></label>
+        <label><span data-i18n="gf_mail"></span><input type="email" id="f_mail" placeholder="name@example.de" autocomplete="email"></label>
       </div>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between"><h2>Hazır listeniz var mı?</h2><button type="button" class="btn ghost small" id="impOpen">Listeyi içe aktar</button></div>
-      <p class="note">Katılımcı listeniz Google Sheets, Excel ya da bir kayıt formunda hazırsa tek tek yazmanıza gerek yok. İçe aktardıktan sonra oda dağılımını kontrol edip gönderin.</p>
+    </section>
+
+    <section class="card">
+      <div class="row between"><h3 data-i18n="gf_import_title"></h3><button type="button" class="btn ghost small" id="impOpen" data-i18n="gf_import_btn"></button></div>
+      <p class="note" data-i18n="gf_import_note"></p>
       <div id="imp"></div>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between"><h2>Konaklayanlar · odalar</h2><button type="button" class="btn small" id="addRoom">+ Oda ekle</button></div>
-      <p class="note">Her oda için oda tipini seçin ve odada kalacak kişileri yazın. 0–2 yaş bebekler yatak saymaz; bebek yatağı isteyebilirsiniz. Çocuk ücreti: 0–2 yaş ücretsiz · 3–7 yaş %50 · 8 yaş ve üstü tam ücret.</p>
+    </section>
+
+    <section class="card" aria-labelledby="s2">
+      <div class="row between"><h3 id="s2"><span class="stepnum">2</span><span data-i18n="gf_rooms_title"></span></h3><button type="button" class="btn small" id="addRoom" data-i18n="add_room"></button></div>
+      <p class="note" data-i18n="gf_rooms_note"></p>
       <div id="rooms" style="display:grid;gap:12px"></div>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between"><h2>Günübirlik katılımcılar</h2><button type="button" class="btn small" id="addDay">+ Kişi ekle</button></div>
+    </section>
+
+    <section class="card" aria-labelledby="s3">
+      <div class="row between"><h3 id="s3"><span class="stepnum">3</span><span data-i18n="gf_days_title"></span></h3><button type="button" class="btn small" id="addDay" data-i18n="add_person"></button></div>
       <div id="days" style="display:grid;gap:8px"></div>
-    </div>
-    <div class="card"><h2>Ödeme ve fatura</h2><p class="note" id="invNote"></p><div id="inv" style="display:grid;gap:8px"></div></div>
-    <div class="row"><button type="button" class="btn" id="send">Formu gönder</button><span id="dirty" class="small muted"></span></div>
-    <p class="note">Gönderdikten sonra da bu linkten değişiklik yapabilirsiniz; her değişiklik otele iletilir. Kişisel bilgiler yalnız konaklamanızın düzenlenmesi ve faturalandırma için kullanılır.</p>
-  </main>
-</div>
+    </section>
+
+    <section class="card" aria-labelledby="s4">
+      <h3 id="s4"><span class="stepnum">4</span><span data-i18n="gf_inv_title"></span></h3>
+      <p class="note" id="invNote"></p>
+      <div id="inv" style="display:grid;gap:10px"></div>
+    </section>
+
+    <p class="note" data-i18n="gf_footer"></p>
+  </div>
+</main>
+
+<div class="sendbar hidden" id="sendbar"><div class="in">
+  <div class="small"><b id="sumLine"></b><br><span id="dirty" class="muted"></span></div>
+  <button type="button" class="btn big" id="send"></button>
+</div></div>
+
+<script src="/i18n.js"></script>
 <script src="/common.js"></script>
 <script src="/importer.js"></script>
 <script>
-const { $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, renderEditor, api } = HG;
+const { $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, renderEditor, api, capacityErrors } = HG;
 const token = new URLSearchParams(location.search).get("t") || "";
 let st, sub, submittedAt, locked = false, pending = null, dirty = false;
 const els = { rooms: $("rooms"), days: $("days"), inv: $("inv") };
-const markDirty = () => { dirty = true; $("dirty").textContent = "Gönderilmemiş değişiklik var."; };
+$("langBox").appendChild(I18N.langSelect(() => st && draw()));
+I18N.apply();
+const markDirty = () => { dirty = true; drawBar(); };
 window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
 
+function drawBar() {
+  const s = sub.rooms.reduce((x, r) => x + r.people.length, 0);
+  $("sumLine").textContent = t("gf_summary", { r: sub.rooms.length, s, d: sub.days.length });
+  $("dirty").textContent = dirty ? t("gf_dirty") : (submittedAt ? t("gf_last", { t: dtTR(submittedAt) }) : t("gf_notyet"));
+  $("send").textContent = locked ? t("gf_send_req") : t("gf_send");
+}
 function draw() {
-  $("grpLine").textContent = `${st.name} · ${dTR(st.in)} → ${dTR(st.out)} · ${nights(st)} gece`;
+  I18N.apply();
+  document.title = `${st.name} · Hotel Global`;
+  $("grpLine").textContent = `${st.name} · ${dTR(st.in)} → ${dTR(st.out)} · ${t("nights_n", { n: nights(st) })}`;
   const left = daysLeft(st);
-  $("intro").innerHTML = `Sayın ${esc(st.leader || "grup sorumlusu")}, grubunuzun odalama ve katılımcı bilgilerini lütfen <b>en geç ${deadlineDate(st).toLocaleDateString("tr-TR")}</b> tarihine kadar doldurun${left >= 0 ? ` (${left} gün kaldı)` : ` <span class="chip crit">son tarih geçti</span>`}. Check-in 14:00, check-out 10:00. Resepsiyonumuz 24 saat hizmet verir.<br><b>Bu tarihten sonra yapılan değişiklikler otele talep olarak iletilir; karşılanıp karşılanmayacağı otelin takdirindedir.</b>`;
-  $("send").textContent = locked ? "Değişiklik talebi gönder" : "Formu gönder";
-  $("status").innerHTML = (locked ? `<div class="flag warn"><span class="chip warn">Son tarih geçti</span><span>Odalama son tarihi geçti. Göndereceğiniz değişiklikler otele <b>talep</b> olarak iletilir ve otel onaylarsa uygulanır.</span></div>` : "")
-    + (pending ? `<div class="flag warn"><span class="chip warn">Onay bekliyor</span><span>${esc(dtTR(pending.at))} tarihli değişiklik talebiniz otelin onayını bekliyor. Aşağıda talep ettiğiniz hali görüyorsunuz.</span></div>` : "")
-    + (submittedAt ? `<span class="chip ok">Son gönderim: ${esc(dtTR(submittedAt))}</span>` : `<span class="chip warn">Henüz gönderilmedi</span>`);
-  const priceTxt = `Konaklama ${eur(st.pNight)} / kişi / gece${st.pDay ? ` · günübirlik ${eur(st.pDay)} / kişi` : ""}${st.pSingle ? ` · tek kişilik oda farkı ${eur(st.pSingle)} / gece` : ""}.`;
-  $("invNote").textContent = (st.paymode === "kisi"
-    ? "Herkes kendi ücretini girişte öder. Fatura isteyenler bilgilerini burada bırakırsa fatura, çıkışı takip eden hafta içinde e-posta ile gönderilir. "
-    : "Grubun tamamı tek faturada toplanır. Fatura bilgilerini aşağıya yazın. ") + priceTxt;
+  $("intro").innerHTML = t("gf_intro", { n: esc(st.leader || ""), d: HG.fmt(deadlineDate(st)), left: left >= 0 ? t("gf_left", { n: left }) : ` <span class="chip crit">${t("gf_deadline_passed")}</span>` }) + `<br><b>${t("gf_rule")}</b>`;
+  $("steps").innerHTML = t("gf_steps").split("|").map((s) => `<li>${esc(s)}</li>`).join("");
+  $("status").innerHTML = (locked ? `<div class="flag warn"><span class="chip warn">${t("gf_deadline_passed")}</span><span>${t("gf_locked")}</span></div>` : "")
+    + (pending ? `<div class="flag warn"><span class="chip warn">${t("gf_on_hold")}</span><span>${esc(t("gf_pending", { t: dtTR(pending.at) }))}</span></div>` : "")
+    + (submittedAt ? `<div><span class="chip ok">${esc(t("gf_last", { t: dtTR(submittedAt) }))}</span></div>` : `<div><span class="chip warn">${t("gf_notyet")}</span></div>`);
+  const prices = t("gf_prices", { a: eur(st.pNight), d: st.pDay ? t("gf_prices_day", { a: eur(st.pDay) }) : "", s: st.pSingle ? t("gf_prices_single", { a: eur(st.pSingle) }) : "" });
+  $("invNote").textContent = (st.paymode === "kisi" ? t("gf_inv_kisi") : t("gf_inv_grup")) + " " + prices;
   renderEditor(els, st, sub, markDirty);
+  drawBar();
 }
 ["name", "phone", "mail"].forEach((k) => { $("f_" + k).oninput = () => { sub.leader[k] = $("f_" + k).value; markDirty(); }; });
 $("addRoom").onclick = () => { sub.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
-$("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => sub, token, onApply: () => { markDirty(); draw(); } });
 $("addDay").onclick = () => { sub.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "" }); markDirty(); draw(); };
+$("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => sub, token, onApply: () => { markDirty(); draw(); } });
 $("send").onclick = async () => {
-  const ce = HG.capacityErrors(sub);
-  if (ce.length) return toast("Kapasite aşıldı: " + ce.join("; ") + ". Fazla kişiyi silin veya oda tipini büyütün.");
+  const ce = capacityErrors(sub);
+  if (ce.length) return toast(t("capacity_block", { l: ce.join("; ") }));
   $("send").disabled = true;
   try {
     const r = await api(`/api/form?t=${encodeURIComponent(token)}`, { method: "POST", body: sub });
-    sub = r.submission; submittedAt = r.submittedAt; locked = r.locked; pending = r.pending; dirty = false; $("dirty").textContent = "";
-    draw(); toast(r.pending ? "Değişiklik talebiniz otele iletildi. Onaylanınca uygulanacak." : "Teşekkürler, bilgiler otele iletildi.");
+    sub = r.submission; submittedAt = r.submittedAt; locked = r.locked; pending = r.pending; dirty = false;
+    draw(); toast(r.pending ? t("gf_sent_req") : t("gf_sent"));
   } catch (e) { toast(e.message); } finally { $("send").disabled = false; }
 };
 (async () => {
@@ -90,7 +122,7 @@ $("send").onclick = async () => {
     st = r.settings; sub = r.submission; submittedAt = r.submittedAt; locked = r.locked; pending = r.pending;
     sub.leader = sub.leader || { name: "", phone: "", mail: "" };
     ["name", "phone", "mail"].forEach((k) => ($("f_" + k).value = sub.leader[k] || ""));
-    $("app").classList.remove("hidden"); draw();
+    $("app").classList.remove("hidden"); $("sendbar").classList.remove("hidden"); draw();
   } catch (e) {
     $("grpLine").textContent = ""; $("errMsg").textContent = e.message; $("err").classList.remove("hidden");
   }

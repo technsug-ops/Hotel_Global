@@ -1,4 +1,4 @@
-import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, mergeSubmission, roomingDeadline, describe, capacityErrors } from './_lib.js';
+import { readJSON, writeJSON, groupPath, tokenPath, isId, cleanSubmission, pushAlert, addHistory, mergeSubmission, roomingDeadline, describe, capacityErrors, fail } from './_lib.js';
 
 async function load(token) {
   if (!isId(token)) return null;
@@ -12,9 +12,9 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   try {
     const cur = await load(req.query.t);
-    if (!cur) return res.status(404).json({ error: 'Link geçersiz veya süresi dolmuş.' });
+    if (!cur) return fail(res, 404, 'e_link', 'Link geçersiz veya süresi dolmuş.');
     const g = cur.data;
-    if (g.settings.status === 'İptal') return res.status(410).json({ error: 'Bu grup kaydı iptal edildi.' });
+    if (g.settings.status === 'İptal') return fail(res, 410, 'e_cancelled', 'Bu grup kaydı iptal edildi.');
     const deadline = roomingDeadline(g.settings);
     const pub = () => ({
       settings: { name: g.settings.name, leader: g.settings.leader, in: g.settings.in, out: g.settings.out, paymode: g.settings.paymode, pNight: g.settings.pNight, pDay: g.settings.pDay, pSingle: g.settings.pSingle, deadline: g.settings.deadline },
@@ -28,30 +28,29 @@ export default async function handler(req, res) {
     const now = new Date(), nowIso = now.toISOString();
     const incoming = cleanSubmission(req.body || {});
     const capErr = capacityErrors(incoming);
-    if (capErr.length) return res.status(400).json({ error: `Oda kapasitesi aşıldı: ${capErr.join('; ')}. Fazla kişiyi başka odaya alın veya daha büyük oda seçin.` });
-    const text = describe(incoming);
+    if (capErr.length) return res.status(400).json({ error: 'Oda kapasitesi aşıldı: ' + capErr.join('; '), code: 'e_capacity', detail: capErr });
+    const desc = describe(incoming);
     if (deadline && now > deadline) {
-      // son tarih geçti: değişiklik otel onayına kadar bekler
       g.pending = { at: nowIso, submission: incoming };
-      pushAlert(g, `Son tarihten sonra değişiklik talebi (${text}). Onaylayın veya reddedin.`);
-      g.history = [{ at: nowIso, by: 'grup', text: `Değişiklik talebi gönderildi: ${text}` }, ...(g.history || [])].slice(0, 200);
+      pushAlert(g, 'a_pending', { desc });
+      addHistory(g, 'grup', 'h_pending_sent', { desc });
     } else {
       const first = !g.submittedAt;
       const old = g.submission || { rooms: [], days: [] };
       const anyPaid = (old.rooms || []).some((r) => r.paid || r.given) || (old.days || []).some((d) => d.paid || d.given) || old.groupPay?.paid;
-      if (!first) pushAlert(g, `Grup sorumlusu formu güncelledi: ${text}`);
-      if (anyPaid) pushAlert(g, 'Ödeme kaydı yapıldıktan sonra grup listesi değişti. Tahsilat listesini kontrol edin.');
+      if (!first) pushAlert(g, 'a_form_updated', { desc });
+      if (anyPaid) pushAlert(g, 'a_after_payment');
       g.submission = mergeSubmission(old, incoming);
       g.submittedAt = nowIso;
       g.pending = null;
-      g.history = [{ at: nowIso, by: 'grup', text: `Form ${first ? 'gönderildi' : 'güncellendi'}: ${text}` }, ...(g.history || [])].slice(0, 200);
+      addHistory(g, 'grup', first ? 'h_form_sent' : 'h_form_updated', { desc });
     }
     g.updatedAt = nowIso;
     await writeJSON(groupPath(g.id), g, cur.etag);
     return res.status(200).json(pub());
   } catch (e) {
     console.error('form', e);
-    if (String(e?.name || e).includes('Precondition')) return res.status(409).json({ error: 'Kayıt aynı anda değiştirildi. Lütfen tekrar gönderin.' });
-    return res.status(500).json({ error: 'Sunucu hatası' });
+    if (String(e?.name || e).includes('Precondition')) return fail(res, 409, 'e_conflict');
+    return fail(res, 500, 'e_server', 'Sunucu hatası');
   }
 }

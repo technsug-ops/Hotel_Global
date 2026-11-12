@@ -1,63 +1,62 @@
-import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, mergeSubmission, describe, cleanSchedule } from './_lib.js';
+import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, addHistory, mergeSubmission, describe, cleanSchedule, fail } from './_lib.js';
+
+const NOTE_CODES = ['h_rooming_saved', 'h_settings_saved'];
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (!requireStaff(req, res)) return;
   const id = req.query.id;
-  if (!isId(id)) return res.status(400).json({ error: 'Geçersiz grup' });
+  if (!isId(id)) return fail(res, 400, 'e_invalid_group', 'Geçersiz grup');
   try {
     const cur = await readJSON(groupPath(id));
-    if (!cur) return res.status(404).json({ error: 'Grup bulunamadı' });
+    if (!cur) return fail(res, 404, 'e_not_found', 'Grup bulunamadı');
     if (req.method === 'GET') return res.status(200).json({ group: cur.data, etag: cur.etag });
     if (req.method !== 'PUT') return res.status(405).end();
     const b = req.body || {};
-    if (b.etag && b.etag !== cur.etag) return res.status(409).json({ error: 'Kayıt başka biri tarafından değiştirildi. Sayfayı yenileyin.' });
+    if (b.etag && b.etag !== cur.etag) return fail(res, 409, 'e_conflict');
     const g = cur.data;
     const now = new Date().toISOString();
     if (b.settings) {
       const prev = g.settings, next = cleanSettings(b.settings);
       if (prev.in !== next.in || prev.out !== next.out) {
-        const t = `Tarih değişti: ${prev.in || '—'} → ${prev.out || '—'} yerine ${next.in || '—'} → ${next.out || '—'}`;
-        g.history = [{ at: now, by: 'otel', text: t }, ...(g.history || [])].slice(0, 200);
-        pushAlert(g, t + '. Grup sorumlusuna bildirin; son tarihler yeni tarihe göre kaydı.');
+        const p = { a: `${prev.in || '—'} → ${prev.out || '—'}`, b: `${next.in || '—'} → ${next.out || '—'}` };
+        addHistory(g, 'otel', 'h_dates', p); pushAlert(g, 'a_dates', p);
       }
-      if (prev.status !== next.status) g.history = [{ at: now, by: 'otel', text: `Durum: ${prev.status} → ${next.status}` }, ...(g.history || [])].slice(0, 200);
+      if (prev.status !== next.status) addHistory(g, 'otel', 'h_status', { a: prev.status, b: next.status });
       g.settings = next;
     }
     if (b.submission) g.submission = cleanSubmission(b.submission, true);
-    if (b.schedule) {
-      g.schedule = cleanSchedule(b.schedule);
-      g.history = [{ at: now, by: 'otel', text: `Program güncellendi: ${g.schedule.length} kalem` }, ...(g.history || [])].slice(0, 200);
-    }
-    if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
+    if (b.schedule) { g.schedule = cleanSchedule(b.schedule); addHistory(g, 'otel', 'h_schedule', { n: g.schedule.length }); }
     if (b.pending === 'approve' && g.pending) {
       g.submission = mergeSubmission(g.submission || {}, g.pending.submission);
       g.submittedAt = g.pending.at;
-      g.history = [{ at: now, by: 'otel', text: `Değişiklik talebi onaylandı: ${describe(g.pending.submission)}` }, ...(g.history || [])].slice(0, 200);
+      addHistory(g, 'otel', 'h_pending_ok', { desc: describe(g.pending.submission) });
       g.pending = null;
     } else if (b.pending === 'reject' && g.pending) {
-      g.history = [{ at: now, by: 'otel', text: `Değişiklik talebi reddedildi: ${describe(g.pending.submission)}` }, ...(g.history || [])].slice(0, 200);
+      addHistory(g, 'otel', 'h_pending_no', { desc: describe(g.pending.submission) });
       g.pending = null;
     }
     if (b.call) {
       const c = { at: now, ...cleanCall(b.call) };
       g.calls = [c, ...(g.calls || [])].slice(0, 100);
-      if (c.result === 'Kesinleşti') { g.settings.status = 'Kesin'; g.confirmedAt = now; }
-      if (c.result === 'İptal') g.settings.status = 'İptal';
-      if (c.result === 'Değişiklik var' || c.result === 'İptal') pushAlert(g, `Teyit araması: ${c.result}${c.note ? ' — ' + c.note : ''}`);
-      g.history = [{ at: now, by: 'otel', text: `Teyit araması (${c.by || 'resepsiyon'}): ${c.result}${c.note ? ' — ' + c.note : ''}` }, ...(g.history || [])].slice(0, 200);
+      if (c.result === 'confirmed') { g.settings.status = 'Kesin'; g.confirmedAt = now; }
+      if (c.result === 'cancelled') g.settings.status = 'İptal';
+      const p = { by: c.by, result: c.result, note: c.note };
+      if (c.result === 'changed' || c.result === 'cancelled') pushAlert(g, 'a_call', p);
+      addHistory(g, 'otel', 'h_call', p);
     }
-    if (b.note) g.history = [{ at: now, by: 'otel', text: String(b.note).slice(0, 200) }, ...(g.history || [])].slice(0, 200);
+    if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
+    if (NOTE_CODES.includes(b.noteCode)) addHistory(g, 'otel', b.noteCode);
     g.updatedAt = now;
     try {
       const w = await writeJSON(groupPath(id), g, cur.etag);
       return res.status(200).json({ group: g, etag: w.etag });
     } catch (e) {
-      if (String(e?.name || e).includes('Precondition')) return res.status(409).json({ error: 'Kayıt aynı anda değiştirildi. Sayfayı yenileyin.' });
+      if (String(e?.name || e).includes('Precondition')) return fail(res, 409, 'e_conflict');
       throw e;
     }
   } catch (e) {
     console.error('group', e);
-    return res.status(500).json({ error: 'Sunucu hatası' });
+    return fail(res, 500, 'e_server', 'Sunucu hatası');
   }
 }

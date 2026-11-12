@@ -4,183 +4,198 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Otel Global · Grup Paneli</title>
+<title>Hotel Global</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div><h1>Otel Global · Grup Paneli</h1><div class="muted" id="sub">Resepsiyon ve yönetim</div></div>
-    <button type="button" class="btn ghost small hidden" id="logout">Çıkış</button>
-  </header>
+<header class="topbar"><div class="in">
+  <div class="brand"><b data-i18n="app_name"></b><span data-i18n="panel_sub"></span></div>
+  <button type="button" class="btn ghost small hidden" id="homeBtn" data-i18n="panel_title"></button>
+  <span id="langBox"></span>
+  <button type="button" class="btn ghost small hidden" id="logout" data-i18n="logout"></button>
+</div></header>
 
+<main class="wrap">
   <!-- giriş -->
   <section id="v-login" class="card login hidden">
-    <h2>Giriş</h2>
-    <form id="loginForm" style="display:grid;gap:10px">
-      <label>Panel şifresi<input type="password" id="pw" autocomplete="current-password" required></label>
-      <button class="btn" type="submit">Giriş yap</button>
+    <h2 data-i18n="login"></h2>
+    <form id="loginForm" style="display:grid;gap:12px">
+      <label><span data-i18n="password"></span><input type="password" id="pw" autocomplete="current-password" required></label>
+      <button class="btn" type="submit" data-i18n="login_btn"></button>
       <span id="loginErr" class="small" style="color:var(--crit)"></span>
     </form>
   </section>
 
   <!-- gösterge paneli -->
-  <section id="v-list" class="hidden" style="display:grid;gap:18px">
-    <div class="row" style="justify-content:space-between;align-items:end">
-      <div><h2 id="todayTitle">Bugün</h2><span class="small muted" id="lastRefresh"></span></div>
-      <div class="row"><button type="button" class="btn ghost small" id="reload">Yenile</button><button type="button" class="btn small" id="newToggle">+ Yeni grup</button></div>
+  <section id="v-list" class="hidden" style="display:grid;gap:20px">
+    <div class="row between" style="align-items:end">
+      <div><h2 id="todayTitle"></h2><span class="small muted" id="lastRefresh"></span></div>
+      <div class="row"><button type="button" class="btn ghost small" id="reload" data-i18n="refresh"></button><button type="button" class="btn" id="newToggle" data-i18n="new_group"></button></div>
     </div>
     <div class="card hidden" id="newCard">
-      <h3>Yeni grup kaydı</h3>
+      <h3 data-i18n="new_group_title"></h3>
       <form id="newForm" class="grid">
-        <label>Grup adı<input id="n_name" required></label>
-        <label>Grup sorumlusu<input id="n_leader"></label>
-        <label>Geliş<input type="date" id="n_in" required></label>
-        <label>Çıkış<input type="date" id="n_out" required></label>
-        <label>Ödeme şekli<select id="n_paymode"><option value="kisi">Herkes kendisi öder</option><option value="grup">Grup tek fatura öder</option></select></label>
-        <label>Konaklama (€/kişi/gece)<input type="number" min="0" id="n_pNight" value="100"></label>
-        <label>Günübirlik (€/kişi/gün)<input type="number" min="0" id="n_pDay" value="0"></label>
-        <label>Tahmini konaklayan kişi<input type="number" min="0" id="n_estS" placeholder="ör. 50"></label>
-        <label>Tahmini günübirlik kişi<input type="number" min="0" id="n_estD" placeholder="ör. 34"></label>
-        <div style="align-self:end"><button class="btn" type="submit">Grubu oluştur</button></div>
+        <label><span data-i18n="f_name"></span><input id="n_name" required></label>
+        <label><span data-i18n="f_leader"></span><input id="n_leader"></label>
+        <label><span data-i18n="f_in"></span><input type="date" id="n_in" required></label>
+        <label><span data-i18n="f_out"></span><input type="date" id="n_out" required></label>
+        <label><span data-i18n="f_paymode"></span><select id="n_paymode"><option value="kisi" data-i18n="pay_kisi"></option><option value="grup" data-i18n="pay_grup"></option></select></label>
+        <label><span data-i18n="f_pNight"></span><input type="number" min="0" id="n_pNight" value="100"></label>
+        <label><span data-i18n="f_pDay"></span><input type="number" min="0" id="n_pDay" value="0"></label>
+        <label><span data-i18n="f_estS"></span><input type="number" min="0" id="n_estS" placeholder="50"></label>
+        <label><span data-i18n="f_estD"></span><input type="number" min="0" id="n_estD" placeholder="34"></label>
+        <div style="align-self:end"><button class="btn" type="submit" data-i18n="create_group"></button></div>
       </form>
     </div>
     <div class="tiles" id="kpis"></div>
     <div class="dash2">
-      <div class="card"><div class="row" style="justify-content:space-between"><h3>Yapılacaklar</h3><span id="todoCount"></span></div><div id="todo" class="flags"></div></div>
-      <div class="card"><h3>Bugün ve yarın</h3><div id="arrivals" class="flags"></div></div>
+      <div class="card"><div class="row between"><h3 data-i18n="todo"></h3><span id="todoCount"></span></div><div id="todo" class="flags"></div></div>
+      <div class="card"><h3 data-i18n="today_tomorrow"></h3><div id="arrivals" class="flags"></div></div>
     </div>
     <div class="card">
-      <h3>Önümüzdeki 14 gün · doluluk</h3>
-      <p class="note">Gruplardan gelen listelere göre. Konaklayan: o gece kalan kişi (kapasite 196 yatak). Otelde toplam: konaklayan + günübirlik; restoran kapasitesi 200 kişi. Listesi gelmemiş gruplar tahmini kişi sayısıyla hesaplanır ve ~ ile gösterilir.</p>
-      <div class="tablewrap"><table id="days14"></table></div>
-    </div>
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <h3>Mekanlar ve yemekhaneler</h3>
-        <div class="row"><button type="button" class="btn ghost small" id="vPrev" aria-label="Önceki gün">←</button><input type="date" id="vDate" aria-label="Gün" style="max-width:170px"><button type="button" class="btn ghost small" id="vNext" aria-label="Sonraki gün">→</button></div>
+      <div class="row between">
+        <h3 data-i18n="venues_title"></h3>
+        <div class="row"><button type="button" class="btn ghost small" id="vPrev" data-i18n-aria="prev_day">←</button><input type="date" id="vDate" style="max-width:180px" data-i18n-aria="c_day"><button type="button" class="btn ghost small" id="vNext" data-i18n-aria="next_day">→</button></div>
       </div>
       <div class="tiles" id="meals"></div>
       <div class="tablewrap"><table id="venueTable"></table></div>
-      <details id="venueEdit"><summary class="small" style="cursor:pointer;font-weight:600">Mekan listesini düzenle (ad, tür, kapasite)</summary>
-        <p class="note">Salon: aynı saatte yalnız bir grup. Restoran: gruplar paylaşır, toplam kişi kapasiteyi aşamaz. Kapasite 0 = kontrol yok.</p>
-        <div id="venueRows" style="display:grid;gap:6px"></div>
-        <div class="row"><button type="button" class="btn ghost small" id="vAdd">+ Mekan</button><button type="button" class="btn small" id="vSave">Mekan listesini kaydet</button></div>
+      <details id="venueEdit"><summary data-i18n="venue_edit"></summary>
+        <div style="display:grid;gap:10px;margin-top:10px">
+          <p class="note" data-i18n="venue_note"></p>
+          <div id="venueRows" style="display:grid;gap:6px"></div>
+          <div class="row"><button type="button" class="btn ghost small" id="vAdd" data-i18n="venue_add"></button><button type="button" class="btn small" id="vSave" data-i18n="venue_save"></button></div>
+        </div>
       </details>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <h3>Gruplar</h3>
+      <h3 data-i18n="occ_title"></h3>
+      <p class="note" data-i18n="occ_note"></p>
+      <div class="tablewrap"><table id="days14"></table></div>
+    </div>
+    <div class="card">
+      <div class="row between">
+        <h3 data-i18n="groups"></h3>
         <div class="row">
-          <select id="gFilter" aria-label="Grup filtresi"><option value="active">Yaklaşan ve devam eden</option><option value="past">Geçmiş</option><option value="cancel">İptal</option><option value="all">Hepsi</option></select>
-          <input id="gSearch" placeholder="Grup ara" aria-label="Grup ara" style="max-width:200px">
+          <select id="gFilter" data-i18n-aria="groups" style="width:auto"><option value="active" data-i18n="gf_active"></option><option value="past" data-i18n="gf_past"></option><option value="cancel" data-i18n="gf_cancel"></option><option value="all" data-i18n="gf_all"></option></select>
+          <input id="gSearch" data-i18n-ph="search_group" data-i18n-aria="search_group" style="max-width:220px">
         </div>
       </div>
-      <div id="glist" class="glist"><p class="note">Yükleniyor…</p></div>
+      <div id="glist" class="glist"></div>
     </div>
   </section>
 
-  <!-- detay -->
+  <!-- grup sayfası -->
   <section id="v-detail" class="hidden" style="display:grid;gap:18px">
-    <div class="row" style="justify-content:space-between">
-      <button type="button" class="btn ghost small" id="back">← Gösterge paneli</button>
+    <div class="row between">
+      <button type="button" class="btn ghost small" id="back" data-i18n="back_dash"></button>
       <span id="saveState" class="small muted"></span>
     </div>
-    <h2 id="dTitle"></h2>
-    <nav role="tablist" aria-label="Grup bölümleri">
-      <button role="tab" type="button" data-t="rapor" aria-selected="true">Grup bilgi raporu</button>
-      <button role="tab" type="button" data-t="program" aria-selected="false">Program ve mekanlar</button>
-      <button role="tab" type="button" data-t="odalama" aria-selected="false">Odalama</button>
-      <button role="tab" type="button" data-t="ayar" aria-selected="false">Ayarlar ve link</button>
-      <button role="tab" type="button" data-t="gecmis" aria-selected="false">Uyarılar ve geçmiş <span id="alertCount"></span></button>
+    <div class="card ghead">
+      <div class="row between"><h2 id="dTitle"></h2><span id="dStatus"></span></div>
+      <div class="meta" id="dMeta"></div>
+      <div class="row"><button type="button" class="btn ghost small" id="copyTop" data-i18n="gh_copy_link"></button></div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" type="button" data-t="rapor" data-i18n="tab_report"></button>
+      <button role="tab" type="button" data-t="program" data-i18n="tab_program"></button>
+      <button role="tab" type="button" data-t="odalama" data-i18n="tab_rooming"></button>
+      <button role="tab" type="button" data-t="ayar" data-i18n="tab_settings"></button>
+      <button role="tab" type="button" data-t="gecmis"><span data-i18n="tab_log"></span> <span id="alertCount"></span></button>
     </nav>
 
     <div id="t-rapor" style="display:grid;gap:18px">
       <div class="card hidden" id="pendCard" style="border:2px solid var(--warn)">
-        <h3>Değişiklik talebi · otel onayı bekliyor</h3>
-        <p class="note">Grup sorumlusu odalama son tarihinden sonra değişiklik gönderdi. Karşılanıp karşılanmayacağı otelin takdirinde. Onaylarsanız odalama ve tahsilat listesi yeni hale göre güncellenir; ödeme ve oda no kayıtları aynı sıradaki odalarda korunur.</p>
+        <h3 data-i18n="pend_title"></h3>
+        <p class="note" data-i18n="pend_note"></p>
         <div id="pendInfo" class="small"></div>
         <div class="tablewrap"><table id="pendTable"></table></div>
-        <div class="row"><button type="button" class="btn" id="pendOk">Onayla ve uygula</button><button type="button" class="btn danger" id="pendNo">Reddet</button></div>
+        <div class="row"><button type="button" class="btn" id="pendOk" data-i18n="pend_ok"></button><button type="button" class="btn danger" id="pendNo" data-i18n="pend_no"></button></div>
       </div>
-      <div class="card" id="callCard">
-        <div class="row" style="justify-content:space-between"><h3>Teyit ve kesinleşme</h3><span id="callStage"></span></div>
+      <div class="card">
+        <div class="row between"><h3 data-i18n="call_title"></h3><span id="callStage"></span></div>
         <div id="callInfo" class="small"></div>
         <div class="grid">
-          <label>Arayan<input id="c_by" placeholder="Adınız"></label>
-          <label>Sonuç<select id="c_result"><option>Kesinleşti</option><option>Değişiklik var</option><option>Ulaşılamadı</option><option>Tekrar aranacak</option><option>İptal</option></select></label>
-          <label>Not<input id="c_note" placeholder="ör. kişi sayısı 34 → 36, salon teyit edildi"></label>
-          <div style="align-self:end"><button type="button" class="btn" id="saveCall">Aramayı kaydet</button></div>
+          <label><span data-i18n="caller"></span><input id="c_by" data-i18n-ph="your_name"></label>
+          <label><span data-i18n="result"></span><select id="c_result"><option value="confirmed" data-i18n="cr_confirmed"></option><option value="changed" data-i18n="cr_changed"></option><option value="unreachable" data-i18n="cr_unreachable"></option><option value="callback" data-i18n="cr_callback"></option><option value="cancelled" data-i18n="cr_cancelled"></option></select></label>
+          <label><span data-i18n="note"></span><input id="c_note" data-i18n-ph="call_note_ph"></label>
+          <div style="align-self:end"><button type="button" class="btn" id="saveCall" data-i18n="call_save"></button></div>
         </div>
-        <div class="tablewrap"><table id="callTable"></table></div>
+        <div class="tablewrap hidden" id="callWrap"><table id="callTable"></table></div>
       </div>
       <div class="tiles" id="tiles"></div>
-      <div class="card"><h3>Tekrar görüşülecekler</h3><div class="flags" id="flags"></div></div>
-      <div class="card"><h3>Tahsilat listesi · kimden ne alınacak</h3>
-        <div class="tablewrap"><table id="payTable"></table></div>
-        <p class="note">"Ödendi" ve "Verildi" işaretleri anında kaydedilir.</p></div>
-      <div class="card"><h3>Odalama listesi</h3><div class="tablewrap"><table id="roomTable"></table></div></div>
-      <div class="row noprint"><button type="button" class="btn ghost small" id="print">Raporu yazdır</button></div>
+      <div class="card"><h3 data-i18n="r_open_issues"></h3><div class="flags" id="flags"></div></div>
+      <div class="card"><h3 data-i18n="r_pay_title"></h3><div class="tablewrap"><table id="payTable"></table></div><p class="note" data-i18n="r_pay_note"></p></div>
+      <div class="card"><h3 data-i18n="r_rooms_title"></h3><div class="tablewrap"><table id="roomTable"></table></div></div>
+      <div class="row noprint"><button type="button" class="btn ghost small" id="print" data-i18n="r_print"></button></div>
     </div>
 
     <div id="t-program" class="hidden" style="display:grid;gap:18px">
       <div class="card">
-        <div class="row" style="justify-content:space-between"><h3>Saatlik program · mekan ve yemek planı</h3>
-          <div class="row"><button type="button" class="btn ghost small" id="pTemplate">Her gün kahvaltı + akşam yemeği ekle</button><button type="button" class="btn small" id="pAdd">+ Satır</button></div></div>
-        <p class="note">Her satır bir öğün, ikram veya salon kullanımıdır. Kişi sayısı varsayılan olarak grubun toplamıdır. Mekan çakışmaları ve kapasite diğer gruplarla birlikte kontrol edilir.</p>
+        <div class="row between"><h3 data-i18n="prog_title"></h3>
+          <div class="row"><button type="button" class="btn ghost small" id="pTemplate" data-i18n="prog_template"></button><button type="button" class="btn small" id="pAdd" data-i18n="prog_add"></button></div></div>
+        <p class="note" data-i18n="prog_note"></p>
         <div id="pIssues" class="flags"></div>
         <div class="tablewrap"><table id="pTable"></table></div>
-        <div class="row"><button type="button" class="btn" id="pSave">Programı kaydet</button><span id="pState" class="small muted"></span></div>
+        <div class="row"><button type="button" class="btn" id="pSave" data-i18n="prog_save"></button><span id="pState" class="small muted"></span></div>
       </div>
     </div>
 
     <div id="t-odalama" class="hidden" style="display:grid;gap:18px">
-      <p class="note">Grup sorumlusunun gönderdiği liste. Otel de buradan düzeltebilir ve oda numarası atayabilir.</p>
-      <div class="card"><div class="row" style="justify-content:space-between"><h3>Dışarıdan liste içe aktar</h3><button type="button" class="btn ghost small" id="impOpen">Google Sheets / Excel / CSV</button></div><div id="imp"></div></div>
-      <div class="card"><div class="row" style="justify-content:space-between"><h3>Odalar</h3><button type="button" class="btn small" id="addRoom">+ Oda ekle</button></div><div id="rooms" style="display:grid;gap:12px"></div></div>
-      <div class="card"><div class="row" style="justify-content:space-between"><h3>Günübirlik</h3><button type="button" class="btn small" id="addDay">+ Kişi ekle</button></div><div id="days" style="display:grid;gap:8px"></div></div>
-      <div class="card"><h3>Ödeme ve fatura</h3><div id="inv" style="display:grid;gap:8px"></div></div>
-      <div class="row"><button type="button" class="btn" id="saveSub">Odalamayı kaydet</button></div>
+      <p class="note" data-i18n="rooming_note"></p>
+      <div class="card"><div class="row between"><h3 data-i18n="import_title"></h3><button type="button" class="btn ghost small" id="impOpen" data-i18n="import_btn"></button></div><div id="imp"></div></div>
+      <div class="card"><div class="row between"><h3 data-i18n="rooms"></h3><button type="button" class="btn small" id="addRoom" data-i18n="add_room"></button></div><div id="rooms" style="display:grid;gap:12px"></div></div>
+      <div class="card"><div class="row between"><h3 data-i18n="day_guests"></h3><button type="button" class="btn small" id="addDay" data-i18n="add_person"></button></div><div id="days" style="display:grid;gap:8px"></div></div>
+      <div class="card"><h3 data-i18n="pay_invoice"></h3><div id="inv" style="display:grid;gap:10px"></div></div>
+      <div class="row"><button type="button" class="btn" id="saveSub" data-i18n="save_rooming"></button></div>
     </div>
 
     <div id="t-ayar" class="hidden" style="display:grid;gap:18px">
       <div class="card">
-        <h3>Grup sorumlusuna gönderilecek link</h3>
-        <div class="linkbox"><input id="link" readonly aria-label="Grup linki"><button type="button" class="btn small" id="copy">Kopyala</button></div>
-        <p class="note">Bu linki bilen herkes formu açabilir. Yalnız grup sorumlusuna gönderin.</p>
+        <h3 data-i18n="link_title"></h3>
+        <div class="row"><label style="width:auto"><span data-i18n="link_lang"></span><select id="linkLang" style="width:auto"></select></label></div>
+        <div class="linkbox"><input id="link" readonly data-i18n-aria="link_title"><button type="button" class="btn small" id="copy" data-i18n="copy"></button></div>
+        <p class="note" data-i18n="link_note"></p>
       </div>
       <div class="card">
-        <h3>Grup ayarları</h3>
+        <h3 data-i18n="group_settings"></h3>
         <div class="grid" id="settingsGrid"></div>
-        <label>Notlar (yalnız otel görür)<textarea id="s_notes"></textarea></label>
-        <div class="row"><button type="button" class="btn" id="saveSet">Ayarları kaydet</button></div>
+        <label><span data-i18n="f_notes"></span><textarea id="s_notes"></textarea></label>
+        <div class="row"><button type="button" class="btn" id="saveSet" data-i18n="save_settings"></button></div>
       </div>
     </div>
 
     <div id="t-gecmis" class="hidden" style="display:grid;gap:18px">
-      <div class="card"><div class="row" style="justify-content:space-between"><h3>Uyarılar</h3><button type="button" class="btn ghost small" id="seen">Hepsini okundu say</button></div><div id="alerts" class="flags"></div></div>
-      <div class="card"><h3>Geçmiş</h3><div class="tablewrap"><table id="history"></table></div></div>
+      <div class="card"><div class="row between"><h3 data-i18n="alerts"></h3><button type="button" class="btn ghost small" id="seen" data-i18n="mark_seen"></button></div><div id="alerts" class="flags"></div></div>
+      <div class="card"><h3 data-i18n="history"></h3><div class="tablewrap"><table id="history"></table></div></div>
     </div>
   </section>
-</div>
+</main>
+
+<script src="/i18n.js"></script>
 <script src="/common.js"></script>
 <script src="/importer.js"></script>
 <script>
-const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api } = HG;
-let G = null, ETAG = null, dirtySub = false;
+const { $, esc, eur, dTR, dtTR, toast, renderEditor, renderReport, api, dayName } = HG;
+let G = null, ETAG = null, dirtySub = false, PDIRTY = false, GROUPS = [], VENUES = [], refreshTimer = null, CUR_TAB = "rapor";
 const views = ["login", "list", "detail"];
-const showView = (v) => views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v));
+const showView = (v) => { views.forEach((x) => $("v-" + x).classList.toggle("hidden", x !== v)); $("homeBtn").classList.toggle("hidden", v !== "detail"); };
+$("langBox").appendChild(I18N.langSelect(rerender));
+I18N.apply();
+function rerender() {
+  I18N.apply();
+  if (!$("v-list").classList.contains("hidden")) { setTodayTitle(); drawDash(); drawVenueEditor(); }
+  if (!$("v-detail").classList.contains("hidden") && G) drawDetail(true);
+}
 const SETTINGS = [
-  ["name", "Grup adı", "text"], ["leader", "Grup sorumlusu", "text"], ["phone", "Sorumlu telefon", "text"], ["mail", "Sorumlu e-posta", "email"],
-  ["in", "Geliş", "date"], ["out", "Çıkış", "date"], ["status", "Durum", ["Teklif", "Opsiyon", "Kesin", "İptal"]],
-  ["paymode", "Ödeme şekli", [["kisi", "Herkes kendisi öder"], ["grup", "Grup tek fatura öder"]]],
-  ["pNight", "Konaklama (€/kişi/gece)", "number"], ["pDay", "Günübirlik (€/kişi/gün)", "number"], ["pSingle", "Tek kişilik oda farkı (€/gece)", "number"],
-  ["deadline", "İsim–oda listesi son tarihi (gün önce)", "number"], ["confirmDays", "Kesinleşme son tarihi (gelişten gün önce)", "number"],
-  ["callDays", "Teyit araması (son tarihten gün önce)", "number"], ["salon", "Salon", "text"],
-  ["estSleepers", "Tahmini konaklayan (liste gelene kadar)", "number"], ["estDays", "Tahmini günübirlik (liste gelene kadar)", "number"],
+  ["name", "f_name", "text"], ["leader", "f_leader", "text"], ["phone", "f_phone", "text"], ["mail", "f_mail", "email"],
+  ["in", "f_in", "date"], ["out", "f_out", "date"], ["status", "f_status", ["Teklif", "Opsiyon", "Kesin", "İptal"]],
+  ["paymode", "f_paymode", [["kisi", "pay_kisi"], ["grup", "pay_grup"]]],
+  ["pNight", "f_pNight", "number"], ["pDay", "f_pDay", "number"], ["pSingle", "f_pSingle", "number"],
+  ["deadline", "f_deadline", "number"], ["confirmDays", "f_confirmDays", "number"], ["callDays", "f_callDays", "number"],
+  ["estSleepers", "f_estS", "number"], ["estDays", "f_estD", "number"], ["salon", "f_salon", "text"],
 ];
 
 /* ---------- oturum ---------- */
@@ -193,115 +208,116 @@ $("loginForm").onsubmit = async (e) => {
   try { await api("/api/login", { method: "POST", body: { password: $("pw").value } }); $("pw").value = ""; $("logout").classList.remove("hidden"); openList(); }
   catch (err) { $("loginErr").textContent = err.message; }
 };
-$("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }).catch(() => {}); $("logout").classList.add("hidden"); showView("login"); };
+$("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }).catch(() => {}); $("logout").classList.add("hidden"); clearInterval(refreshTimer); showView("login"); };
+$("homeBtn").onclick = () => openList();
 const authFail = (e) => { if (e.status === 401) { showView("login"); return true; } toast(e.message); return false; };
 
 /* ---------- gösterge paneli ---------- */
-let GROUPS = [], refreshTimer = null, VENUES = [];
-async function loadVenues() { try { VENUES = (await api("/api/venues")).venues; } catch (e) { VENUES = []; } }
-const DAY = 864e5, BEDS = 196, RESTO = 200;
+const BEDS = 196;
 const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const todayIso = () => isoOf(new Date());
 const plusIso = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return isoOf(d); };
-const dayName = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("tr-TR", { weekday: "short", day: "2-digit", month: "2-digit" });
-const link = (g, t = "rapor") => `<a href="#${g.id}/${t}" data-open="${g.id}" data-tab="${t}">${esc(g.name)}</a>`;
+const link = (g, tb = "rapor") => `<a href="#${g.id}/${tb}" data-open="${g.id}" data-tab="${tb}">${esc(g.name)}</a>`;
+const timeNow = () => new Date().toLocaleTimeString(I18N.locale, { hour: "2-digit", minute: "2-digit" });
+const setTodayTitle = () => ($("todayTitle").textContent = t("today_title", { d: new Date().toLocaleDateString(I18N.locale, { weekday: "long", day: "2-digit", month: "long", year: "numeric" }) }));
+async function loadVenues() { try { VENUES = (await api("/api/venues")).venues; } catch (e) { VENUES = []; } }
 
 async function openList() {
   showView("list"); G = null; try { history.replaceState(null, "", "/"); } catch (e) {}
-  $("todayTitle").textContent = "Bugün · " + new Date().toLocaleDateString("tr-TR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+  setTodayTitle();
   try {
-    [GROUPS] = await Promise.all([api("/api/groups").then((r) => r.groups), VENUES.length ? null : loadVenues()]);
-    $("lastRefresh").textContent = "Son güncelleme " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) + " · her dakika yenilenir";
+    const [gl] = await Promise.all([api("/api/groups"), VENUES.length ? null : loadVenues()]);
+    GROUPS = gl.groups; $("lastRefresh").textContent = t("last_refresh", { t: timeNow() });
     if (!$("vDate").value) $("vDate").value = todayIso();
     drawDash(); drawVenueEditor();
   } catch (e) { authFail(e); }
   clearInterval(refreshTimer);
-  refreshTimer = setInterval(() => { if (!$("v-list").classList.contains("hidden") && !document.hidden) openListQuiet(); }, 60000);
+  refreshTimer = setInterval(async () => {
+    if ($("v-list").classList.contains("hidden") || document.hidden) return;
+    try { GROUPS = (await api("/api/groups")).groups; $("lastRefresh").textContent = t("last_refresh", { t: timeNow() }); drawDash(); } catch (e) {}
+  }, 60000);
 }
-async function openListQuiet() { try { GROUPS = (await api("/api/groups")).groups; $("lastRefresh").textContent = "Son güncelleme " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) + " · her dakika yenilenir"; drawDash(); } catch (e) {} }
 
 function drawDash() {
-  const t = todayIso(), tm = plusIso(1), in14 = plusIso(14);
+  const tIso = todayIso(), tm = plusIso(1), in14 = plusIso(14);
   const live = GROUPS.filter((g) => g.status !== "İptal");
-  const inHouse = live.filter((g) => g.in <= t && t < g.out);
-  const arrivingToday = live.filter((g) => g.in === t), leavingToday = live.filter((g) => g.out === t);
-  const next14 = live.filter((g) => g.in >= t && g.in <= in14);
+  const inHouse = live.filter((g) => g.in <= tIso && tIso < g.out);
+  const arrivingToday = live.filter((g) => g.in === tIso), leavingToday = live.filter((g) => g.out === tIso);
+  const next14 = live.filter((g) => g.in >= tIso && g.in <= in14);
   const tonight = inHouse.reduce((x, g) => x + g.sleepersEff, 0);
+  const openMoneyGroups = live.filter((g) => g.in <= tIso && g.due - g.paid > 0.009);
+  const openMoney = openMoneyGroups.reduce((x, g) => x + (g.due - g.paid), 0);
   const anyEst = (arr) => arr.some((g) => g.estimated);
   const til = (g) => (g.estimated ? "~" : "");
-  const openMoneyGroups = live.filter((g) => g.in <= t && g.due - g.paid > 0.009);
-  const openMoney = openMoneyGroups.reduce((x, g) => x + (g.due - g.paid), 0);
 
-  // yapılacaklar
   const todo = [];
   live.forEach((g) => {
-    const ci = HG.confirmInfo(g, g.confirmedAt), dl = HG.deadlineDate(g), upcoming = g.in >= t;
-    if (ci.stage === "gecikti") todo.push(["crit", g, `Kesinleşme son tarihi geçti (${HG.fmt(ci.confirmBy)}). Yönetici kararı gerekli.`]);
-    else if (ci.stage === "ara") todo.push(["warn", g, `Teyit araması: ${g.leader || "sorumlu"}${g.phone ? " · " + g.phone : ""} · kesinleşme ${HG.fmt(ci.confirmBy)} (${ci.daysToConfirm} gün)`]);
+    const ci = HG.confirmInfo(g, g.confirmedAt), dl = HG.deadlineDate(g), upcoming = g.in >= tIso;
+    if (ci.stage === "gecikti") todo.push(["crit", g, t("t_confirm_late", { d: HG.fmt(ci.confirmBy) })]);
+    else if (ci.stage === "ara") todo.push(["warn", g, t("t_call", { who: (g.leader || t("f_leader")) + (g.phone ? " · " + g.phone : ""), d: HG.fmt(ci.confirmBy), n: ci.daysToConfirm })]);
     if (upcoming && !g.submittedAt) {
-      const left = Math.round((dl - new Date()) / DAY);
-      if (left < 0) todo.push(["crit", g, `Odalama listesi gelmedi, son tarih geçti (${HG.fmt(dl)}). Grup sorumlusunu arayın.`]);
-      else if (left <= 3) todo.push(["warn", g, `Odalama listesi bekleniyor, son tarihe ${left} gün (${HG.fmt(dl)}).`]);
+      const left = Math.round((dl - new Date()) / 864e5);
+      if (left < 0) todo.push(["crit", g, t("t_list_late", { d: HG.fmt(dl) })]);
+      else if (left <= 3) todo.push(["warn", g, t("t_list_soon", { n: left, d: HG.fmt(dl) })]);
     }
-    if (g.pending) todo.push(["warn", g, "Son tarihten sonra değişiklik talebi: onaylayın veya reddedin."]);
-    if (g.alerts) todo.push(["crit", g, `${g.alerts} okunmamış uyarı.`, "gecmis"]);
-    if (g.out <= t && g.due - g.paid > 0.009) todo.push(["crit", g, `Çıkış yaptı, açık hesap: ${eur(g.due - g.paid)} (${g.openAccounts} hesap).`]);
+    if (g.pending) todo.push(["warn", g, t("t_pending")]);
+    if (g.alerts) todo.push(["crit", g, t("t_alerts", { n: g.alerts }), "gecmis"]);
+    if (g.out <= tIso && g.due - g.paid > 0.009) todo.push(["crit", g, t("t_open_after", { a: eur(g.due - g.paid), n: g.openAccounts })]);
   });
-  HG.venueIssues(live, VENUES, t, in14).forEach((x) => todo.push([x.level, x.groups[0], `${dayName(x.date)} · ${x.text}`, "program"]));
+  HG.venueIssues(live, VENUES, tIso, in14).forEach((x) => todo.push([x.level, x.groups[0], `${dayName(x.date)} · ${x.text}`, "program"]));
   todo.sort((a, b) => (a[0] === b[0] ? 0 : a[0] === "crit" ? -1 : 1));
 
   $("kpis").innerHTML = [
-    ["Bu gece konaklayan", `${anyEst(inHouse) ? "~" : ""}${tonight}`, `/ ${BEDS} yatak · ${inHouse.length} grup`, tonight > BEDS ? "crit" : ""],
-    ["Bugün gelen / giden", `${arrivingToday.length} / ${leavingToday.length}`, "grup", ""],
-    ["Önümüzdeki 14 gün", next14.length, `grup · ${next14.filter((g) => g.status === "Kesin").length} kesin, ${next14.filter((g) => g.status !== "Kesin").length} opsiyon`, ""],
-    ["Beklenen tutar · 14 gün", (anyEst(next14) ? "~" : "") + eur(next14.reduce((x, g) => x + g.dueEff, 0)), anyEst(next14) ? "listesi gelmeyenler tahminle" : "gelen listelere göre", ""],
-    ["Açık tahsilat", eur(openMoney), `${openMoneyGroups.length} grup · gelmiş gruplar`, openMoney > 0 ? "warn" : ""],
-    ["Yapılacak", todo.length, `${todo.filter((x) => x[0] === "crit").length} kritik`, todo.some((x) => x[0] === "crit") ? "crit" : ""],
-  ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="small muted">${a}</span><b>${b}</b><span class="small muted">${c}</span></div>`).join("");
+    [t("k_tonight"), `${anyEst(inHouse) ? "~" : ""}${tonight}`, t("k_tonight_sub", { b: BEDS, g: inHouse.length }), tonight > BEDS ? "crit" : "ok"],
+    [t("k_inout"), `${arrivingToday.length} / ${leavingToday.length}`, t("k_groups"), ""],
+    [t("k_14"), next14.length, t("k_14_sub", { a: next14.filter((g) => g.status === "Kesin").length, b: next14.filter((g) => g.status !== "Kesin").length }), ""],
+    [t("k_due"), (anyEst(next14) ? "~" : "") + eur(next14.reduce((x, g) => x + g.dueEff, 0)), anyEst(next14) ? t("k_due_est") : t("k_due_real"), ""],
+    [t("k_open"), eur(openMoney), t("k_open_sub", { g: openMoneyGroups.length }), openMoney > 0 ? "warn" : "ok"],
+    [t("k_todo"), todo.length, t("k_todo_sub", { n: todo.filter((x) => x[0] === "crit").length }), todo.some((x) => x[0] === "crit") ? "crit" : "ok"],
+  ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="tl">${a}</span><b>${b}</b><span class="ts">${c}</span></div>`).join("");
 
   $("todoCount").innerHTML = todo.length ? `<span class="chip ${todo.some((x) => x[0] === "crit") ? "crit" : "warn"}">${todo.length}</span>` : "";
-  $("todo").innerHTML = todo.length ? todo.slice(0, 40).map(([k, g, txt, tb]) => `<div class="flag ${k}"><span class="chip ${k}">${k === "crit" ? "Kritik" : "Yapılacak"}</span><span><b>${link(g, tb || "rapor")}</b> · ${esc(txt)}</span></div>`).join("") : '<span class="chip ok">Bekleyen iş yok</span>';
+  $("todo").innerHTML = todo.length ? todo.slice(0, 40).map(([k, g, txt, tb]) => `<div class="flag ${k}"><span class="chip ${k}">${k === "crit" ? t("crit") : t("task")}</span><span><b>${link(g, tb || "rapor")}</b> · ${esc(txt)}</span></div>`).join("") : `<span class="chip ok">${t("todo_none")}</span>`;
 
   const evts = [];
-  [[t, "Bugün"], [tm, "Yarın"]].forEach(([d, label]) => {
-    live.filter((g) => g.in === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--accent-soft)"><span class="chip ok">${label} giriş</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} konaklayan, ${til(g)}${g.daysEff} günübirlik${g.estimated ? " (tahmini, liste yok)" : `, ${g.rooms} oda`}${g.salon ? " · " + esc(g.salon) : ""} · <span class="muted">${esc(g.status)}</span></span></div>`));
-    live.filter((g) => g.out === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--warn-soft)"><span class="chip warn">${label} çıkış</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} konaklayan${g.due - g.paid > 0.009 ? ` · <b>açık ${eur(g.due - g.paid)}</b>` : " · hesap kapalı"}</span></div>`));
+  [[tIso, t("today")], [tm, t("tomorrow")]].forEach(([d, label]) => {
+    live.filter((g) => g.in === d).forEach((g) => evts.push(`<div class="flag in"><span class="chip ok">${esc(t("arrival", { d: label }))}</span><span><b>${link(g)}</b> · ${esc(t("ev_in", { s: til(g) + g.sleepersEff, d: til(g) + g.daysEff }))}${g.estimated ? " (" + t("ev_est") + ")" : ", " + esc(t("ev_rooms", { n: g.rooms }))}${g.salon ? " · " + esc(g.salon) : ""} · <span class="muted">${esc(HG.statusLabel(g.status))}</span></span></div>`));
+    live.filter((g) => g.out === d).forEach((g) => evts.push(`<div class="flag warn"><span class="chip warn">${esc(t("departure", { d: label }))}</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} ${t("persons")} · ${g.due - g.paid > 0.009 ? `<b>${esc(t("ev_open", { a: eur(g.due - g.paid) }))}</b>` : esc(t("ev_closed"))}</span></div>`));
   });
-  inHouse.filter((g) => g.in !== t && g.out !== t).forEach((g) => evts.push(`<div class="flag" style="background:var(--paper)"><span class="chip ok">Otelde</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} konaklayan · çıkış ${esc(dayName(g.out))}</span></div>`));
-  $("arrivals").innerHTML = evts.length ? evts.join("") : '<span class="chip ok">Bugün ve yarın giriş/çıkış yok</span>';
+  inHouse.filter((g) => g.in !== tIso && g.out !== tIso).forEach((g) => evts.push(`<div class="flag"><span class="chip info">${t("in_house")}</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} ${t("persons")} · ${esc(t("ev_leaves", { d: dayName(g.out) }))}</span></div>`));
+  $("arrivals").innerHTML = evts.length ? evts.join("") : `<span class="chip ok">${t("no_inout")}</span>`;
 
-  // 14 gün
+  const RESTO = VENUES.filter((v) => v.kind === "restoran").reduce((x, v) => x + (v.cap || 0), 0) || 200;
   const rows = [];
   for (let i = 0; i < 14; i++) {
     const d = plusIso(i);
     const sleep = live.filter((g) => g.in <= d && d < g.out), dayG = live.filter((g) => g.daysEff && g.in <= d && d <= g.out);
     const s = sleep.reduce((x, g) => x + g.sleepersEff, 0), dd = dayG.reduce((x, g) => x + g.daysEff, 0), tot = s + dd;
-    const est = anyEst([...sleep, ...dayG]) ? "~" : "";
-    const names = [...new Set([...sleep, ...dayG])];
+    const est = anyEst([...sleep, ...dayG]) ? "~" : "", names = [...new Set([...sleep, ...dayG])];
     const pct = Math.min(100, Math.round((s / BEDS) * 100));
     rows.push(`<tr><td><b>${esc(dayName(d))}</b></td>
       <td><div class="bar" title="${s} / ${BEDS}"><span style="width:${pct}%" class="${s > BEDS ? "over" : pct > 85 ? "hi" : ""}"></span></div><span class="small">${est}${s} / ${BEDS}</span></td>
       <td class="num">${est}${dd}</td><td class="num">${tot > RESTO ? `<span class="chip crit">${est}${tot}</span>` : est + tot}</td>
       <td class="small">${live.filter((g) => g.in === d).map((g) => link(g)).join(", ") || "—"}</td>
       <td class="small">${live.filter((g) => g.out === d).map((g) => link(g)).join(", ") || "—"}</td>
-      <td class="small">${names.map((g) => link(g) + (g.estimated ? " <span class='muted'>(tahmini)</span>" : "")).join(", ") || '<span class="muted">—</span>'}</td></tr>`);
+      <td class="small">${names.map((g) => link(g) + (g.estimated ? ` <span class='muted'>(${t("estimated")})</span>` : "")).join(", ") || '<span class="muted">—</span>'}</td></tr>`);
   }
-  $("days14").innerHTML = `<thead><tr><th>Gün</th><th>Konaklayan</th><th class="num">Günübirlik</th><th class="num">Otelde toplam</th><th>Giriş</th><th>Çıkış</th><th>Otelde olan gruplar</th></tr></thead><tbody>${rows.join("")}</tbody>`;
+  $("days14").innerHTML = `<thead><tr><th>${t("c_day")}</th><th>${t("c_overnight")}</th><th class="num">${t("c_dayguests")}</th><th class="num">${t("c_inhouse")}</th><th>${t("c_arr")}</th><th>${t("c_dep")}</th><th>${t("c_groups_in")}</th></tr></thead><tbody>${rows.join("")}</tbody>`;
   drawGroupList(); drawVenues();
 }
 function drawVenues() {
   const d = $("vDate").value || todayIso(), live = GROUPS.filter((g) => g.status !== "İptal");
   const plan = HG.dayPlan(live, VENUES, d), issues = HG.venueIssues(live, VENUES, d, d);
-  const totalOf = (k) => plan.meals[k] || 0;
   const restCap = VENUES.filter((v) => v.kind === "restoran").reduce((x, v) => x + (v.cap || 0), 0);
-  $("meals").innerHTML = [["Kahvaltı", "Kahvaltı"], ["Öğle yemeği", "Öğle"], ["Akşam yemeği", "Akşam"], ["İkram / ara", "İkram / ara"]].map(([k, l]) =>
-    `<div class="tile ${restCap && k !== "İkram / ara" && totalOf(k) > restCap ? "tile-crit" : ""}"><span class="small muted">${l} · ${esc(dayName(d))}</span><b>${totalOf(k)}</b><span class="small muted">kişi${k !== "İkram / ara" && restCap ? " · yemekhaneler " + restCap : ""}</span></div>`).join("");
-  const issueFor = (vn) => issues.filter((x) => x.venue === vn || (vn === "— mekân yok —" && x.venue === "—"));
-  $("venueTable").innerHTML = `<thead><tr><th>Mekan</th><th>Tür · kapasite</th><th>Program</th><th>Durum</th></tr></thead><tbody>${plan.rows.map(({ venue: v, ev }) => {
-    const iss = issueFor(v.name);
-    return `<tr><td><b>${esc(v.name)}</b>${v.unknown && !v.name.startsWith("—") ? ' <span class="chip warn">listede yok</span>' : ""}</td><td class="small">${v.kind === "restoran" ? "Yemekhane" : "Salon"}${v.cap ? " · " + v.cap : ""}</td>
-      <td class="small">${ev.length ? ev.map((e) => `${esc(e.start)}–${esc(e.end || "?")} · ${link(e.g, "program")} · ${esc(e.kind)}${e.title ? " (" + esc(e.title) + ")" : ""} · ${e.pax} kişi`).join("<br>") : '<span class="muted">boş</span>'}</td>
-      <td>${iss.length ? iss.map((x) => `<span class="chip ${x.level}" title="${esc(x.text)}">${x.level === "crit" ? "Çakışma / kapasite" : "Kontrol"}</span>`).join(" ") : ev.length ? '<span class="chip ok">Uygun</span>' : ""}</td></tr>`;
+  $("meals").innerHTML = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara"].map((k) => {
+    const n = plan.meals[k] || 0, over = restCap && k !== "İkram / ara" && n > restCap;
+    return `<div class="tile ${over ? "tile-crit" : ""}"><span class="tl">${HG.kindLabel(k)} · ${esc(dayName(d))}</span><b>${n}</b><span class="ts">${t("persons")}${k !== "İkram / ara" && restCap ? " · " + t("restaurants_cap", { n: restCap }) : ""}</span></div>`;
+  }).join("");
+  $("venueTable").innerHTML = `<thead><tr><th>${t("c_venue")}</th><th>${t("c_kindcap")}</th><th>${t("c_program")}</th><th>${t("c_state")}</th></tr></thead><tbody>${plan.rows.map(({ venue: v, key, ev }) => {
+    const iss = issues.filter((x) => x.venue === key);
+    return `<tr><td><b>${esc(v.name)}</b>${v.unknown && !v.none ? ` <span class="chip warn">${t("v_not_listed")}</span>` : ""}</td><td class="small">${v.kind === "restoran" ? t("v_restoran") : t("v_salon")}${v.cap ? " · " + v.cap : ""}</td>
+      <td class="small">${ev.length ? ev.map((e) => `${esc(e.start)}–${esc(e.end || "?")} · ${link(e.g, "program")} · ${esc(HG.kindLabel(e.kind))}${e.title ? " (" + esc(e.title) + ")" : ""} · ${e.pax} ${t("persons")}`).join("<br>") : `<span class="muted">${t("v_free")}</span>`}</td>
+      <td>${iss.length ? iss.map((x) => `<span class="chip ${x.level}" title="${esc(x.text)}">${x.level === "crit" ? t("v_conflict") : t("v_check")}</span>`).join(" ") : ev.length ? `<span class="chip ok">${t("v_ok")}</span>` : ""}</td></tr>`;
   }).join("")}</tbody>`;
 }
 $("vDate").onchange = drawVenues;
@@ -312,8 +328,8 @@ function drawVenueEditor() {
   VEDIT = VENUES.map((v) => ({ ...v }));
   const box = $("venueRows"); box.innerHTML = "";
   VEDIT.forEach((v, i) => {
-    const r = document.createElement("div"); r.className = "person"; r.style.gridTemplateColumns = "1fr 140px 110px auto";
-    r.innerHTML = `<input value="${esc(v.name)}" aria-label="Mekan adı"><select aria-label="Tür"><option value="salon">Salon</option><option value="restoran">Yemekhane</option></select><input type="number" min="0" value="${v.cap || 0}" aria-label="Kapasite"><button type="button" class="btn danger small">Sil</button>`;
+    const r = document.createElement("div"); r.className = "person"; r.style.gridTemplateColumns = "1fr 160px 110px auto";
+    r.innerHTML = `<input value="${esc(v.name)}" aria-label="${esc(t("venue_name"))}"><select aria-label="${esc(t("type"))}"><option value="salon">${t("v_salon")}</option><option value="restoran">${t("v_restoran")}</option></select><input type="number" min="0" value="${v.cap || 0}" aria-label="${esc(t("capacity"))}"><button type="button" class="btn danger small">${t("delete")}</button>`;
     const [n, k, c, del] = r.children; k.value = v.kind;
     n.oninput = () => (v.name = n.value); k.onchange = () => (v.kind = k.value); c.oninput = () => (v.cap = Number(c.value));
     del.onclick = () => { VENUES = VEDIT.filter((_, j) => j !== i); drawVenueEditor(); };
@@ -321,19 +337,20 @@ function drawVenueEditor() {
   });
 }
 $("vAdd").onclick = () => { VENUES = [...VEDIT, { name: "", kind: "salon", cap: 0 }]; drawVenueEditor(); };
-$("vSave").onclick = async () => { try { VENUES = (await api("/api/venues", { method: "PUT", body: { venues: VEDIT } })).venues; toast("Mekan listesi kaydedildi"); drawVenueEditor(); drawDash(); } catch (e) { authFail(e); } };
+$("vSave").onclick = async () => { try { VENUES = (await api("/api/venues", { method: "PUT", body: { venues: VEDIT } })).venues; toast(t("venue_saved")); drawVenueEditor(); drawDash(); } catch (e) { authFail(e); } };
 function drawGroupList() {
-  const t = todayIso(), f = $("gFilter").value, q = $("gSearch").value.toLocaleLowerCase("tr");
-  const list = GROUPS.filter((g) => (f === "all") || (f === "cancel" ? g.status === "İptal" : f === "past" ? g.out < t && g.status !== "İptal" : g.out >= t && g.status !== "İptal"))
-    .filter((g) => !q || g.name.toLocaleLowerCase("tr").includes(q));
-  $("glist").innerHTML = list.length ? "" : '<p class="note">Bu filtrede grup yok.</p>';
+  const tIso = todayIso(), f = $("gFilter").value, q = $("gSearch").value.toLocaleLowerCase(I18N.locale);
+  const list = GROUPS.filter((g) => (f === "all") || (f === "cancel" ? g.status === "İptal" : f === "past" ? g.out < tIso && g.status !== "İptal" : g.out >= tIso && g.status !== "İptal"))
+    .filter((g) => !q || g.name.toLocaleLowerCase(I18N.locale).includes(q));
+  $("glist").innerHTML = list.length ? "" : `<p class="empty">${t("no_groups")}</p>`;
   list.forEach((g) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "gitem";
+    const b = document.createElement("button"); b.type = "button"; b.className = "gitem st-" + g.status;
     const chip = g.status === "Kesin" ? "ok" : g.status === "İptal" ? "crit" : "warn";
     const ci = HG.confirmInfo(g, g.confirmedAt);
+    const line = g.estimated ? `~${g.sleepersEff} · ~${g.daysEff} (${t("estimated")}) · ~${eur(g.dueEff)}` : t("gl_line", { r: g.rooms, s: g.sleepers, d: g.days, a: eur(g.due) }) + (g.paid ? ` (${t("gl_paid", { a: eur(g.paid) })})` : "");
     b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(dTR(g.in))} → ${esc(dTR(g.out))}${g.leader ? " · " + esc(g.leader) : ""}</span></span>
-      <span class="row small"><span class="chip ${chip}">${esc(g.status)}</span>${ci.stage === "ara" ? '<span class="chip warn">Aranmalı</span>' : ci.stage === "gecikti" ? '<span class="chip crit">Kesinleşme gecikti</span>' : ""}${g.submittedAt ? '<span class="chip ok">Form geldi</span>' : '<span class="chip warn">Form bekleniyor</span>'}${g.pending ? '<span class="chip warn">Değişiklik talebi</span>' : ""}${g.alerts ? `<span class="chip crit">${g.alerts} uyarı</span>` : ""}
-      <span class="muted">${g.estimated ? `~${g.sleepersEff} konaklayan · ~${g.daysEff} günübirlik (tahmini) · ~${eur(g.dueEff)}` : `${g.rooms} oda · ${g.sleepers} konaklayan · ${g.days} günübirlik · ${eur(g.due)}${g.paid ? ` (ödenen ${eur(g.paid)})` : ""}`}</span></span>`;
+      <span class="row small"><span class="chip ${chip}">${esc(HG.statusLabel(g.status))}</span>${ci.stage === "ara" ? `<span class="chip warn">${t("chip_call")}</span>` : ci.stage === "gecikti" ? `<span class="chip crit">${t("chip_late")}</span>` : ""}${g.submittedAt ? `<span class="chip ok">${t("chip_form_in")}</span>` : `<span class="chip warn">${t("chip_form_wait")}</span>`}${g.pending ? `<span class="chip warn">${t("chip_pending")}</span>` : ""}${g.alerts ? `<span class="chip crit">${t("chip_alerts", { n: g.alerts })}</span>` : ""}
+      <span class="muted">${esc(line)}</span></span>`;
     b.onclick = () => openGroup(g.id); $("glist").appendChild(b);
   });
 }
@@ -344,82 +361,106 @@ $("newToggle").onclick = () => { $("newCard").classList.toggle("hidden"); if (!$
 $("newForm").onsubmit = async (e) => {
   e.preventDefault();
   const s = { name: $("n_name").value, leader: $("n_leader").value, in: $("n_in").value, out: $("n_out").value, paymode: $("n_paymode").value, pNight: $("n_pNight").value, pDay: $("n_pDay").value, estSleepers: $("n_estS").value, estDays: $("n_estD").value, pSingle: 15, deadline: 3, status: "Opsiyon" };
-  if (s.out < s.in) return toast("Çıkış tarihi gelişten önce olamaz.");
-  try { const r = await api("/api/groups", { method: "POST", body: { settings: s } }); e.target.reset(); $("newCard").classList.add("hidden"); toast("Grup oluşturuldu"); openGroup(r.id, "ayar"); }
+  if (s.out < s.in) return toast(t("err_out_before_in"));
+  try { const r = await api("/api/groups", { method: "POST", body: { settings: s } }); e.target.reset(); $("newCard").classList.add("hidden"); toast(t("group_created")); openGroup(r.id, "ayar"); }
   catch (err) { authFail(err); }
 };
 
-/* ---------- detay ---------- */
-function tab(t) {
-  document.querySelectorAll("#v-detail nav button").forEach((b) => { const on = b.dataset.t === t; b.setAttribute("aria-selected", on); $("t-" + b.dataset.t).classList.toggle("hidden", !on); });
-  try { history.replaceState(null, "", `#${G.id}/${t}`); } catch (e) {}
+/* ---------- grup sayfası ---------- */
+function tab(x) {
+  CUR_TAB = x;
+  document.querySelectorAll(".tabs button").forEach((b) => { const on = b.dataset.t === x; b.setAttribute("aria-selected", on); $("t-" + b.dataset.t).classList.toggle("hidden", !on); });
+  try { history.replaceState(null, "", `#${G.id}/${x}`); } catch (e) {}
 }
-document.querySelectorAll("#v-detail nav button").forEach((b) => (b.onclick = () => tab(b.dataset.t)));
+document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => tab(b.dataset.t)));
 $("back").onclick = openList;
 
-async function openGroup(id, t = "rapor") {
+async function openGroup(id, x = "rapor") {
   try {
     const [r, gl] = await Promise.all([api(`/api/group?id=${encodeURIComponent(id)}`), api("/api/groups"), VENUES.length ? null : loadVenues()]);
-    GROUPS = gl.groups; G = r.group; ETAG = r.etag; dirtySub = false; PDIRTY = false; showView("detail"); drawDetail(); tab(t);
-  }
-  catch (e) { authFail(e); }
+    GROUPS = gl.groups; G = r.group; ETAG = r.etag; dirtySub = false; PDIRTY = false; showView("detail"); drawDetail(); tab(x); window.scrollTo(0, 0);
+  } catch (e) { authFail(e); }
 }
 async function save(patch, msg) {
-  $("saveState").textContent = "Kaydediliyor…";
-  try { const r = await api(`/api/group?id=${encodeURIComponent(G.id)}`, { method: "PUT", body: { ...patch, etag: ETAG } }); G = r.group; ETAG = r.etag; $("saveState").textContent = "Kaydedildi " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }); if (msg) toast(msg); drawDetail(); return true; }
-  catch (e) { $("saveState").textContent = ""; if (!authFail(e) && e.status === 409) openGroup(G.id); return false; }
+  $("saveState").textContent = t("saving");
+  try { const r = await api(`/api/group?id=${encodeURIComponent(G.id)}`, { method: "PUT", body: { ...patch, etag: ETAG } }); G = r.group; ETAG = r.etag; $("saveState").textContent = t("saved_at", { t: timeNow() }); if (msg) toast(msg); drawDetail(); return true; }
+  catch (e) { $("saveState").textContent = ""; if (!authFail(e) && e.status === 409) openGroup(G.id, CUR_TAB); return false; }
 }
-function drawDetail() {
+const groupLink = () => `${location.origin}/g.html?t=${G.token}&lang=${$("linkLang").value || I18N.lang}`;
+function drawDetail(langOnly) {
   const st = G.settings, sub = G.submission;
-  $("dTitle").textContent = `${st.name} · ${dTR(st.in)} → ${dTR(st.out)}`;
+  I18N.apply($("v-detail"));
+  $("dTitle").textContent = st.name;
+  const chip = st.status === "Kesin" ? "ok" : st.status === "İptal" ? "crit" : "warn";
+  $("dStatus").innerHTML = `<span class="chip ${chip}">${esc(HG.statusLabel(st.status))}</span>`;
+  $("dMeta").innerHTML = `<span>${esc(t("gh_dates", { a: dTR(st.in), b: dTR(st.out), n: HG.nights(st) }))}</span><span>${t("gh_leader")}: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}${st.mail ? " · " + esc(st.mail) : ""}</span>${st.salon ? `<span>${t("f_salon")}: ${esc(st.salon)}</span>` : ""}`;
   const unseen = (G.alerts || []).filter((a) => !a.seen).length;
   $("alertCount").innerHTML = unseen ? `<span class="chip crit">${unseen}</span>` : "";
   renderReport({ tiles: $("tiles"), flags: $("flags"), pay: $("payTable"), roomsTable: $("roomTable") }, st, sub, G.submittedAt, () => save({ submission: sub }), G.confirmedAt);
-  const ci = HG.confirmInfo(st, G.confirmedAt);
-  const stageTxt = { kesin: ["ok", "Kesin"], iptal: ["crit", "İptal"], ara: ["warn", "Aranmalı"], gecikti: ["crit", "Son tarih geçti"], geldi: ["warn", "Kesinleşmeden geldi"], bekliyor: ["warn", "Opsiyon · arama zamanı gelmedi"] }[ci.stage];
   const P = G.pending;
   $("pendCard").classList.toggle("hidden", !P);
   if (P) {
-    const d = (x) => `${x.rooms.length} oda · ${x.rooms.reduce((a, r) => a + r.people.length, 0)} konaklayan · ${x.days.length} günübirlik`;
-    $("pendInfo").innerHTML = `Talep zamanı: <b>${esc(dtTR(P.at))}</b><br>Şu anki hali: ${d(sub)}<br>Talep edilen: <b>${d(P.submission)}</b>`;
-    $("pendTable").innerHTML = `<thead><tr><th>Oda</th><th>Tip</th><th>Talep edilen misafirler</th></tr></thead><tbody>${P.submission.rooms.map((r, i) => `<tr><td>Oda ${i + 1}</td><td>${esc(r.type)}${r.extra ? " +" + r.extra + " ek yatak" : ""}</td><td class="small">${r.people.map((p) => esc(p.n || "(ad yok)") + ` <span class="muted">(${HG.AGES[p.a].label})</span>`).join(", ")}</td></tr>`).join("")}${P.submission.days.length ? `<tr><td colspan="2">Günübirlik</td><td class="small">${P.submission.days.map((p) => esc(p.n || "(ad yok)")).join(", ")}</td></tr>` : ""}</tbody>`;
+    const d = (x) => t("desc", { r: x.rooms.length, s: x.rooms.reduce((a, r) => a + r.people.length, 0), d: x.days.length });
+    $("pendInfo").innerHTML = `${t("pend_when")}: <b>${esc(dtTR(P.at))}</b><br>${t("pend_now")}: ${esc(d(sub))}<br>${t("pend_req")}: <b>${esc(d(P.submission))}</b>`;
+    $("pendTable").innerHTML = `<thead><tr><th>${t("c_room")}</th><th>${t("c_type")}</th><th>${t("c_guests")}</th></tr></thead><tbody>${P.submission.rooms.map((r, i) => `<tr><td>${esc(t("room_n", { i: i + 1 }))}</td><td>${esc(r.type)}${r.extra ? " +" + esc(t("extra_n", { n: r.extra })) : ""}</td><td class="small">${r.people.map((p) => esc(p.n || t("no_name")) + ` <span class="muted">(${HG.ageLabel(p.a)})</span>`).join(", ")}</td></tr>`).join("")}${P.submission.days.length ? `<tr><td colspan="2">${t("day_guests")}</td><td class="small">${P.submission.days.map((p) => esc(p.n || t("no_name"))).join(", ")}</td></tr>` : ""}</tbody>`;
   }
-  $("callStage").innerHTML = `<span class="chip ${stageTxt[0]}">${stageTxt[1]}</span>`;
-  $("callInfo").innerHTML = `Teyit araması: <b>${HG.fmt(ci.callOn)}</b> · Kesinleşme son tarihi: <b>${HG.fmt(ci.confirmBy)}</b> · Odalama son tarihi: <b>${HG.fmt(HG.deadlineDate(st))}</b>${G.confirmedAt ? ` · Kesinleşti: ${esc(dtTR(G.confirmedAt))}` : ""} · Sorumlu: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}`;
-  $("callTable").innerHTML = (G.calls || []).length ? `<thead><tr><th>Zaman</th><th>Arayan</th><th>Sonuç</th><th>Not</th></tr></thead><tbody>${G.calls.map((c) => `<tr><td class="small">${esc(dtTR(c.at))}</td><td class="small">${esc(c.by || "—")}</td><td>${esc(c.result)}</td><td class="small">${esc(c.note)}</td></tr>`).join("")}</tbody>` : "";
-  renderEditor({ rooms: $("rooms"), days: $("days"), inv: $("inv") }, st, sub, () => { dirtySub = true; $("saveState").textContent = "Kaydedilmemiş değişiklik"; }, { staff: true });
-  $("link").value = `${location.origin}/g.html?t=${G.token}`;
+  const ci = HG.confirmInfo(st, G.confirmedAt);
+  const stageChip = { kesin: "ok", iptal: "crit", ara: "warn", gecikti: "crit", geldi: "warn", bekliyor: "warn" }[ci.stage];
+  $("callStage").innerHTML = `<span class="chip ${stageChip}">${t("stage_" + ci.stage)}</span>`;
+  $("callInfo").innerHTML = esc(t("call_info", { c: HG.fmt(ci.callOn), k: HG.fmt(ci.confirmBy), o: HG.fmt(HG.deadlineDate(st)) })) + (G.confirmedAt ? " · " + esc(t("call_confirmed_at", { t: dtTR(G.confirmedAt) })) : "");
+  const calls = G.calls || [];
+  $("callWrap").classList.toggle("hidden", !calls.length);
+  $("callTable").innerHTML = calls.length ? `<thead><tr><th>${t("c_time")}</th><th>${t("caller")}</th><th>${t("result")}</th><th>${t("note")}</th></tr></thead><tbody>${calls.map((c) => `<tr><td class="small">${esc(dtTR(c.at))}</td><td class="small">${esc(c.by || "—")}</td><td>${esc(HG.callLabel(c.result))}</td><td class="small">${esc(c.note)}</td></tr>`).join("")}</tbody>` : "";
+  if (!dirtySub || langOnly) renderEditor({ rooms: $("rooms"), days: $("days"), inv: $("inv") }, st, sub, () => { dirtySub = true; $("saveState").textContent = t("unsaved"); }, { staff: true });
+  // ayarlar
+  const ll = $("linkLang"); const prevLL = ll.value;
+  ll.innerHTML = Object.entries(I18N.LANGS).map(([k, v]) => `<option value="${k}">${v}</option>`).join(""); ll.value = prevLL || I18N.lang;
+  $("link").value = groupLink();
   const grid = $("settingsGrid"); grid.innerHTML = "";
   SETTINGS.forEach(([k, label, type]) => {
-    const l = document.createElement("label"); l.textContent = label; let el;
-    if (Array.isArray(type)) { el = document.createElement("select"); type.forEach((o) => { const [v, t] = Array.isArray(o) ? o : [o, o]; const op = document.createElement("option"); op.value = v; op.textContent = t; if (st[k] === v) op.selected = true; el.appendChild(op); }); }
+    const l = document.createElement("label"); const sp = document.createElement("span"); sp.textContent = t(label); l.appendChild(sp); let el;
+    if (Array.isArray(type)) { el = document.createElement("select"); type.forEach((o) => { const [v, lk] = Array.isArray(o) ? o : [o, "st_" + o]; const op = document.createElement("option"); op.value = v; op.textContent = t(lk); if (st[k] === v) op.selected = true; el.appendChild(op); }); }
     else { el = document.createElement("input"); el.type = type; el.value = st[k] ?? ""; if (type === "number") el.min = 0; }
     el.id = "s_" + k; l.appendChild(el); grid.appendChild(l);
   });
   $("s_notes").value = st.notes || "";
-  if (!PDIRTY) drawProgram();
-  $("alerts").innerHTML = (G.alerts || []).length ? G.alerts.map((a) => `<div class="flag ${a.seen ? "" : "crit"}"><span class="chip ${a.seen ? "ok" : "crit"}">${a.seen ? "Okundu" : "Yeni"}</span><span>${esc(dtTR(a.at))} · ${esc(a.text)}</span></div>`).join("") : '<span class="chip ok">Uyarı yok</span>';
-  $("history").innerHTML = `<thead><tr><th>Zaman</th><th>Kim</th><th>Ne oldu</th></tr></thead><tbody>${(G.history || []).map((h) => `<tr><td class="small">${esc(dtTR(h.at))}</td><td class="small">${h.by === "grup" ? "Grup sorumlusu" : "Otel"}</td><td>${esc(h.text)}</td></tr>`).join("")}</tbody>`;
+  // uyarılar ve geçmiş
+  $("alerts").innerHTML = (G.alerts || []).length ? G.alerts.map((a) => `<div class="flag ${a.seen ? "" : "crit"}"><span class="chip ${a.seen ? "ok" : "crit"}">${a.seen ? t("alert_seen") : t("alert_new")}</span><span>${esc(dtTR(a.at))} · ${esc(HG.logText(a))}</span></div>`).join("") : `<span class="chip ok">${t("no_alerts")}</span>`;
+  $("history").innerHTML = `<thead><tr><th>${t("c_time")}</th><th>${t("c_who")}</th><th>${t("c_what")}</th></tr></thead><tbody>${(G.history || []).map((h) => `<tr><td class="small">${esc(dtTR(h.at))}</td><td class="small">${h.by === "grup" ? t("by_grup") : t("by_otel")}</td><td>${esc(HG.logText(h))}</td></tr>`).join("")}</tbody>`;
+  if (!PDIRTY || langOnly) drawProgram();
 }
+$("linkLang").onchange = () => ($("link").value = groupLink());
+$("pendOk").onclick = () => save({ pending: "approve" }, t("pend_applied"));
+$("pendNo").onclick = () => save({ pending: "reject" }, t("pend_rejected"));
+$("saveCall").onclick = async () => {
+  const call = { by: $("c_by").value, result: $("c_result").value, note: $("c_note").value };
+  try { localStorage.setItem("hg_caller", call.by); } catch (e) {}
+  if (await save({ call }, t("call_saved"))) $("c_note").value = "";
+};
+try { $("c_by").value = localStorage.getItem("hg_caller") || ""; } catch (e) {}
+$("seen").onclick = () => save({ alertsSeen: true });
+$("print").onclick = () => window.print();
+const copyLink = async () => { $("link").value = groupLink(); try { await navigator.clipboard.writeText($("link").value); toast(t("copied")); } catch (e) { tab("ayar"); $("link").select(); toast(t("copy_manual")); } };
+$("copy").onclick = copyLink; $("copyTop").onclick = copyLink;
+
 /* ---------- program ve mekanlar ---------- */
-let PDIRTY = false;
 const KINDS = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara", "Salon kullanımı", "Diğer"];
 const groupPax = () => { const s = G.submission; const real = s.rooms.reduce((x, r) => x + r.people.length, 0) + s.days.length; return real || (Number(G.settings.estSleepers || 0) + Number(G.settings.estDays || 0)); };
-const stayDates = () => { const out = []; const st = G.settings; if (!st.in) return out; const d = new Date(st.in + "T12:00:00"), e = new Date((st.out || st.in) + "T12:00:00"); while (d <= e) { out.push(isoOf(d)); d.setDate(d.getDate() + 1); } return out; };
+const stayDates = () => { const out = [], st = G.settings; if (!st.in) return out; const d = new Date(st.in + "T12:00:00"), e = new Date((st.out || st.in) + "T12:00:00"); while (d <= e) { out.push(isoOf(d)); d.setDate(d.getDate() + 1); } return out; };
 function drawProgram() {
   G.schedule = G.schedule || [];
-  const vopts = (sel) => `<option value="">— seçin —</option>` + VENUES.map((v) => `<option ${v.name === sel ? "selected" : ""}>${esc(v.name)}</option>`).join("") + (sel && !VENUES.some((v) => v.name === sel) ? `<option selected>${esc(sel)}</option>` : "");
+  const vopts = (sel) => `<option value="">${t("choose")}</option>` + VENUES.map((v) => `<option ${v.name === sel ? "selected" : ""}>${esc(v.name)}</option>`).join("") + (sel && !VENUES.some((v) => v.name === sel) ? `<option selected>${esc(sel)}</option>` : "");
   const dopts = (sel) => stayDates().map((d) => `<option value="${d}" ${d === sel ? "selected" : ""}>${esc(dayName(d))}</option>`).join("");
-  $("pTable").innerHTML = `<thead><tr><th>Gün</th><th>Başlangıç</th><th>Bitiş</th><th>Tür</th><th>Açıklama</th><th>Mekan</th><th class="num">Kişi</th><th></th></tr></thead><tbody>${G.schedule.map((e, i) => `<tr data-i="${i}">
-    <td><select data-k="date" aria-label="Gün">${dopts(e.date)}</select></td>
-    <td><input type="time" data-k="start" value="${esc(e.start)}" aria-label="Başlangıç"></td>
-    <td><input type="time" data-k="end" value="${esc(e.end)}" aria-label="Bitiş"></td>
-    <td><select data-k="kind" aria-label="Tür">${KINDS.map((k) => `<option ${k === e.kind ? "selected" : ""}>${k}</option>`).join("")}</select></td>
-    <td><input data-k="title" value="${esc(e.title)}" placeholder="ör. çorba börek" aria-label="Açıklama"></td>
-    <td><select data-k="venue" aria-label="Mekan">${vopts(e.venue)}</select></td>
-    <td><input type="number" min="0" data-k="pax" value="${e.pax}" style="width:80px" aria-label="Kişi"></td>
-    <td><button type="button" class="btn danger small" data-del="${i}">Sil</button></td></tr>`).join("") || '<tr><td colspan="8" class="muted">Program yok. "+ Satır" ile ekleyin.</td></tr>'}</tbody>`;
-  $("pTable").querySelectorAll("[data-k]").forEach((el) => (el.oninput = el.onchange = () => { const e = G.schedule[el.closest("tr").dataset.i]; e[el.dataset.k] = el.dataset.k === "pax" ? Number(el.value) : el.value; PDIRTY = true; $("pState").textContent = "Kaydedilmemiş değişiklik"; programIssues(); }));
+  $("pTable").innerHTML = `<thead><tr><th>${t("c_day")}</th><th>${t("c_start")}</th><th>${t("c_end")}</th><th>${t("type")}</th><th>${t("c_desc")}</th><th>${t("c_venue")}</th><th class="num">${t("c_pax")}</th><th></th></tr></thead><tbody>${G.schedule.map((e, i) => `<tr data-i="${i}">
+    <td><select data-k="date" aria-label="${esc(t("c_day"))}">${dopts(e.date)}</select></td>
+    <td><input type="time" data-k="start" value="${esc(e.start)}" aria-label="${esc(t("c_start"))}"></td>
+    <td><input type="time" data-k="end" value="${esc(e.end)}" aria-label="${esc(t("c_end"))}"></td>
+    <td><select data-k="kind" aria-label="${esc(t("type"))}">${KINDS.map((k) => `<option value="${k}" ${k === e.kind ? "selected" : ""}>${esc(HG.kindLabel(k))}</option>`).join("")}</select></td>
+    <td><input data-k="title" value="${esc(e.title)}" placeholder="${esc(t("desc_ph"))}" aria-label="${esc(t("c_desc"))}"></td>
+    <td><select data-k="venue" aria-label="${esc(t("c_venue"))}">${vopts(e.venue)}</select></td>
+    <td><input type="number" min="0" data-k="pax" value="${e.pax}" style="width:84px" aria-label="${esc(t("c_pax"))}"></td>
+    <td><button type="button" class="btn danger small" data-del="${i}">${t("delete")}</button></td></tr>`).join("") || `<tr><td colspan="8" class="muted">${t("prog_empty")}</td></tr>`}</tbody>`;
+  $("pTable").querySelectorAll("[data-k]").forEach((el) => (el.oninput = el.onchange = () => { const e = G.schedule[el.closest("tr").dataset.i]; e[el.dataset.k] = el.dataset.k === "pax" ? Number(el.value) : el.value; PDIRTY = true; $("pState").textContent = t("unsaved"); programIssues(); }));
   $("pTable").querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => { G.schedule.splice(Number(b.dataset.del), 1); PDIRTY = true; drawProgram(); }));
   programIssues();
 }
@@ -427,39 +468,30 @@ function programIssues() {
   const others = GROUPS.filter((g) => g.id !== G.id);
   const me = { id: G.id, name: G.settings.name, status: G.settings.status, schedule: G.schedule };
   const iss = HG.venueIssues([...others, me], VENUES).filter((x) => x.groups.some((g) => g.id === G.id));
-  $("pIssues").innerHTML = iss.length ? iss.map((x) => `<div class="flag ${x.level}"><span class="chip ${x.level}">${x.level === "crit" ? "Çakışma" : "Kontrol"}</span><span>${esc(dayName(x.date))} · ${esc(x.text)}</span></div>`).join("") : (G.schedule.length ? '<span class="chip ok">Mekan çakışması yok</span>' : "");
+  $("pIssues").innerHTML = iss.length ? iss.map((x) => `<div class="flag ${x.level}"><span class="chip ${x.level}">${x.level === "crit" ? t("clash") : t("v_check")}</span><span>${esc(dayName(x.date))} · ${esc(x.text)}</span></div>`).join("") : (G.schedule.length ? `<span class="chip ok">${t("prog_no_conflict")}</span>` : "");
 }
-$("pAdd").onclick = () => { const d = stayDates()[0] || ""; G.schedule.push({ date: d, start: "10:00", end: "12:00", kind: "Salon kullanımı", title: "", venue: G.settings.salon || "", pax: groupPax(), note: "" }); PDIRTY = true; drawProgram(); };
+$("pAdd").onclick = () => { G.schedule.push({ date: stayDates()[0] || "", start: "10:00", end: "12:00", kind: "Salon kullanımı", title: "", venue: G.settings.salon || "", pax: groupPax(), note: "" }); PDIRTY = true; drawProgram(); };
 $("pTemplate").onclick = () => {
-  const ds = stayDates(); if (!ds.length) return toast("Önce grubun tarihlerini girin.");
+  const ds = stayDates(); if (!ds.length) return toast(t("prog_need_dates"));
   ds.forEach((d, i) => {
     if (i > 0) G.schedule.push({ date: d, start: "08:00", end: "10:00", kind: "Kahvaltı", title: "", venue: "Arka Restaurant", pax: groupPax(), note: "" });
     if (i < ds.length - 1) G.schedule.push({ date: d, start: "18:00", end: "19:30", kind: "Akşam yemeği", title: "", venue: "Arka Restaurant", pax: groupPax(), note: "" });
   });
-  G.schedule.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)); PDIRTY = true; drawProgram(); toast("Eklendi. Saat ve mekanı kontrol edip kaydedin.");
+  G.schedule.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)); PDIRTY = true; drawProgram(); toast(t("prog_added"));
 };
-$("pSave").onclick = async () => { if (await save({ schedule: G.schedule }, "Program kaydedildi")) { PDIRTY = false; $("pState").textContent = ""; GROUPS = (await api("/api/groups").catch(() => ({ groups: GROUPS }))).groups; drawProgram(); } };
+$("pSave").onclick = async () => { const sched = G.schedule; PDIRTY = false; if (await save({ schedule: sched }, t("prog_saved"))) { $("pState").textContent = ""; GROUPS = (await api("/api/groups").catch(() => ({ groups: GROUPS }))).groups; drawProgram(); } else PDIRTY = true; };
 
-$("addRoom").onclick = () => { G.submission.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "", paid: false, given: false, no: "" }); dirtySub = true; drawDetail(); };
-$("addDay").onclick = () => { G.submission.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "", paid: false, given: false }); dirtySub = true; drawDetail(); };
-$("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => G.submission, onApply: () => { dirtySub = true; drawDetail(); tab("odalama"); $("saveState").textContent = "İçe aktarıldı · kaydetmeyi unutmayın"; } });
-$("saveSub").onclick = async () => { if (await save({ submission: G.submission, note: "Otel odalamayı güncelledi" }, "Odalama kaydedildi")) dirtySub = false; };
+/* ---------- odalama ---------- */
+$("addRoom").onclick = () => { G.submission.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "", paid: false, given: false, no: "" }); dirtySub = true; drawDetail(true); };
+$("addDay").onclick = () => { G.submission.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "", paid: false, given: false }); dirtySub = true; drawDetail(true); };
+$("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => G.submission, onApply: () => { dirtySub = true; drawDetail(true); tab("odalama"); $("saveState").textContent = t("imported_save"); } });
+$("saveSub").onclick = async () => { const s = G.submission; dirtySub = false; if (!(await save({ submission: s, noteCode: "h_rooming_saved" }, t("rooming_saved")))) dirtySub = true; };
 $("saveSet").onclick = () => {
   const s = { ...G.settings };
   SETTINGS.forEach(([k]) => (s[k] = $("s_" + k).value)); s.notes = $("s_notes").value;
-  save({ settings: s, note: "Otel grup ayarlarını güncelledi" }, "Ayarlar kaydedildi");
+  if (s.out && s.in && s.out < s.in) return toast(t("err_out_before_in"));
+  save({ settings: s, noteCode: "h_settings_saved" }, t("settings_saved"));
 };
-$("copy").onclick = async () => { try { await navigator.clipboard.writeText($("link").value); toast("Link kopyalandı"); } catch (e) { $("link").select(); toast("Linki seçtim, Ctrl+C ile kopyalayın"); } };
-$("saveCall").onclick = async () => {
-  const call = { by: $("c_by").value, result: $("c_result").value, note: $("c_note").value };
-  try { localStorage.setItem("hg_caller", call.by); } catch (e) {}
-  if (await save({ call }, "Arama kaydedildi")) $("c_note").value = "";
-};
-try { $("c_by").value = localStorage.getItem("hg_caller") || ""; } catch (e) {}
-$("pendOk").onclick = () => save({ pending: "approve" }, "Değişiklik uygulandı");
-$("pendNo").onclick = () => save({ pending: "reject" }, "Değişiklik talebi reddedildi");
-$("seen").onclick = () => save({ alertsSeen: true });
-$("print").onclick = () => window.print();
 window.addEventListener("beforeunload", (e) => { if (dirtySub || PDIRTY) { e.preventDefault(); e.returnValue = ""; } });
 
 boot().then(() => { const m = (location.hash || "").slice(1).split("/"); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
