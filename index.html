@@ -89,6 +89,10 @@
       </div>
       <div id="glist" class="glist"></div>
     </div>
+    <details class="card noprint" id="demoBox"><summary data-i18n="demo_title"></summary>
+      <div style="display:grid;gap:10px;margin-top:10px"><p class="note" data-i18n="demo_note"></p>
+      <div class="row"><button type="button" class="btn small" id="demoLoad" data-i18n="demo_load"></button><button type="button" class="btn ghost small" id="demoClear" data-i18n="demo_clear"></button></div></div>
+    </details>
   </section>
 
   <!-- bölümler ve işler -->
@@ -593,6 +597,14 @@ function drawDept() {
 $("deptTabs").onclick = (e) => { const b = e.target.closest("[data-dept]"); if (b) { $("dtForm").classList.add("hidden"); openDepts(b.dataset.dept); } };
 $("navDepts").onclick = () => openDepts(CUR_DEPT);
 $("navDash").onclick = () => openList();
+async function demo(action, btn) {
+  if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; toast(t("demo_sure")); setTimeout(() => (btn.dataset.armed = ""), 4000); return; }
+  btn.dataset.armed = ""; btn.disabled = true;
+  try { const r = await api("/api/demo", { method: "POST", body: { action } }); toast(action === "load" ? t("demo_loaded", { g: r.groups, t: r.tasks }) : t("demo_cleared")); await openList(); }
+  catch (e) { authFail(e); } finally { btn.disabled = false; }
+}
+$("demoLoad").onclick = (e) => demo("load", e.currentTarget);
+$("demoClear").onclick = (e) => demo("clear", e.currentTarget);
 
 async function openGroup(id, x = "rapor") {
   try {
