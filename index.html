@@ -43,6 +43,8 @@
         <label>Ödeme şekli<select id="n_paymode"><option value="kisi">Herkes kendisi öder</option><option value="grup">Grup tek fatura öder</option></select></label>
         <label>Konaklama (€/kişi/gece)<input type="number" min="0" id="n_pNight" value="100"></label>
         <label>Günübirlik (€/kişi/gün)<input type="number" min="0" id="n_pDay" value="0"></label>
+        <label>Tahmini konaklayan kişi<input type="number" min="0" id="n_estS" placeholder="ör. 50"></label>
+        <label>Tahmini günübirlik kişi<input type="number" min="0" id="n_estD" placeholder="ör. 34"></label>
         <div style="align-self:end"><button class="btn" type="submit">Grubu oluştur</button></div>
       </form>
     </div>
@@ -53,7 +55,7 @@
     </div>
     <div class="card">
       <h3>Önümüzdeki 14 gün · doluluk</h3>
-      <p class="note">Gruplardan gelen listelere göre. Konaklayan: o gece kalan kişi (kapasite 196 yatak). Otelde toplam: konaklayan + günübirlik; restoran kapasitesi 200 kişi. Formu gelmemiş gruplar 0 görünür.</p>
+      <p class="note">Gruplardan gelen listelere göre. Konaklayan: o gece kalan kişi (kapasite 196 yatak). Otelde toplam: konaklayan + günübirlik; restoran kapasitesi 200 kişi. Listesi gelmemiş gruplar tahmini kişi sayısıyla hesaplanır ve ~ ile gösterilir.</p>
       <div class="tablewrap"><table id="days14"></table></div>
     </div>
     <div class="card">
@@ -153,6 +155,7 @@ const SETTINGS = [
   ["pNight", "Konaklama (€/kişi/gece)", "number"], ["pDay", "Günübirlik (€/kişi/gün)", "number"], ["pSingle", "Tek kişilik oda farkı (€/gece)", "number"],
   ["deadline", "İsim–oda listesi son tarihi (gün önce)", "number"], ["confirmDays", "Kesinleşme son tarihi (gelişten gün önce)", "number"],
   ["callDays", "Teyit araması (son tarihten gün önce)", "number"], ["salon", "Salon", "text"],
+  ["estSleepers", "Tahmini konaklayan (liste gelene kadar)", "number"], ["estDays", "Tahmini günübirlik (liste gelene kadar)", "number"],
 ];
 
 /* ---------- oturum ---------- */
@@ -196,7 +199,9 @@ function drawDash() {
   const inHouse = live.filter((g) => g.in <= t && t < g.out);
   const arrivingToday = live.filter((g) => g.in === t), leavingToday = live.filter((g) => g.out === t);
   const next14 = live.filter((g) => g.in >= t && g.in <= in14);
-  const tonight = inHouse.reduce((x, g) => x + g.sleepers, 0);
+  const tonight = inHouse.reduce((x, g) => x + g.sleepersEff, 0);
+  const anyEst = (arr) => arr.some((g) => g.estimated);
+  const til = (g) => (g.estimated ? "~" : "");
   const openMoneyGroups = live.filter((g) => g.in <= t && g.due - g.paid > 0.009);
   const openMoney = openMoneyGroups.reduce((x, g) => x + (g.due - g.paid), 0);
 
@@ -218,10 +223,10 @@ function drawDash() {
   todo.sort((a, b) => (a[0] === b[0] ? 0 : a[0] === "crit" ? -1 : 1));
 
   $("kpis").innerHTML = [
-    ["Bu gece konaklayan", `${tonight}`, `/ ${BEDS} yatak · ${inHouse.length} grup`, tonight > BEDS ? "crit" : ""],
+    ["Bu gece konaklayan", `${anyEst(inHouse) ? "~" : ""}${tonight}`, `/ ${BEDS} yatak · ${inHouse.length} grup`, tonight > BEDS ? "crit" : ""],
     ["Bugün gelen / giden", `${arrivingToday.length} / ${leavingToday.length}`, "grup", ""],
     ["Önümüzdeki 14 gün", next14.length, `grup · ${next14.filter((g) => g.status === "Kesin").length} kesin, ${next14.filter((g) => g.status !== "Kesin").length} opsiyon`, ""],
-    ["Beklenen tutar · 14 gün", eur(next14.reduce((x, g) => x + g.due, 0)), "gelen listelere göre", ""],
+    ["Beklenen tutar · 14 gün", (anyEst(next14) ? "~" : "") + eur(next14.reduce((x, g) => x + g.dueEff, 0)), anyEst(next14) ? "listesi gelmeyenler tahminle" : "gelen listelere göre", ""],
     ["Açık tahsilat", eur(openMoney), `${openMoneyGroups.length} grup · gelmiş gruplar`, openMoney > 0 ? "warn" : ""],
     ["Yapılacak", todo.length, `${todo.filter((x) => x[0] === "crit").length} kritik`, todo.some((x) => x[0] === "crit") ? "crit" : ""],
   ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="small muted">${a}</span><b>${b}</b><span class="small muted">${c}</span></div>`).join("");
@@ -231,26 +236,27 @@ function drawDash() {
 
   const evts = [];
   [[t, "Bugün"], [tm, "Yarın"]].forEach(([d, label]) => {
-    live.filter((g) => g.in === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--accent-soft)"><span class="chip ok">${label} giriş</span><span><b>${link(g)}</b> · ${g.sleepers} konaklayan, ${g.days} günübirlik, ${g.rooms} oda${g.salon ? " · " + esc(g.salon) : ""} · <span class="muted">${esc(g.status)}</span></span></div>`));
-    live.filter((g) => g.out === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--warn-soft)"><span class="chip warn">${label} çıkış</span><span><b>${link(g)}</b> · ${g.sleepers} konaklayan${g.due - g.paid > 0.009 ? ` · <b>açık ${eur(g.due - g.paid)}</b>` : " · hesap kapalı"}</span></div>`));
+    live.filter((g) => g.in === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--accent-soft)"><span class="chip ok">${label} giriş</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} konaklayan, ${til(g)}${g.daysEff} günübirlik${g.estimated ? " (tahmini, liste yok)" : `, ${g.rooms} oda`}${g.salon ? " · " + esc(g.salon) : ""} · <span class="muted">${esc(g.status)}</span></span></div>`));
+    live.filter((g) => g.out === d).forEach((g) => evts.push(`<div class="flag" style="background:var(--warn-soft)"><span class="chip warn">${label} çıkış</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} konaklayan${g.due - g.paid > 0.009 ? ` · <b>açık ${eur(g.due - g.paid)}</b>` : " · hesap kapalı"}</span></div>`));
   });
-  inHouse.filter((g) => g.in !== t && g.out !== t).forEach((g) => evts.push(`<div class="flag" style="background:var(--paper)"><span class="chip ok">Otelde</span><span><b>${link(g)}</b> · ${g.sleepers} konaklayan · çıkış ${esc(dayName(g.out))}</span></div>`));
+  inHouse.filter((g) => g.in !== t && g.out !== t).forEach((g) => evts.push(`<div class="flag" style="background:var(--paper)"><span class="chip ok">Otelde</span><span><b>${link(g)}</b> · ${til(g)}${g.sleepersEff} konaklayan · çıkış ${esc(dayName(g.out))}</span></div>`));
   $("arrivals").innerHTML = evts.length ? evts.join("") : '<span class="chip ok">Bugün ve yarın giriş/çıkış yok</span>';
 
   // 14 gün
   const rows = [];
   for (let i = 0; i < 14; i++) {
     const d = plusIso(i);
-    const sleep = live.filter((g) => g.in <= d && d < g.out), dayG = live.filter((g) => g.days && g.in <= d && d <= g.out);
-    const s = sleep.reduce((x, g) => x + g.sleepers, 0), dd = dayG.reduce((x, g) => x + g.days, 0), tot = s + dd;
+    const sleep = live.filter((g) => g.in <= d && d < g.out), dayG = live.filter((g) => g.daysEff && g.in <= d && d <= g.out);
+    const s = sleep.reduce((x, g) => x + g.sleepersEff, 0), dd = dayG.reduce((x, g) => x + g.daysEff, 0), tot = s + dd;
+    const est = anyEst([...sleep, ...dayG]) ? "~" : "";
     const names = [...new Set([...sleep, ...dayG])];
     const pct = Math.min(100, Math.round((s / BEDS) * 100));
     rows.push(`<tr><td><b>${esc(dayName(d))}</b></td>
-      <td><div class="bar" title="${s} / ${BEDS}"><span style="width:${pct}%" class="${s > BEDS ? "over" : pct > 85 ? "hi" : ""}"></span></div><span class="small">${s} / ${BEDS}</span></td>
-      <td class="num">${dd}</td><td class="num">${tot > RESTO ? `<span class="chip crit">${tot}</span>` : tot}</td>
+      <td><div class="bar" title="${s} / ${BEDS}"><span style="width:${pct}%" class="${s > BEDS ? "over" : pct > 85 ? "hi" : ""}"></span></div><span class="small">${est}${s} / ${BEDS}</span></td>
+      <td class="num">${est}${dd}</td><td class="num">${tot > RESTO ? `<span class="chip crit">${est}${tot}</span>` : est + tot}</td>
       <td class="small">${live.filter((g) => g.in === d).map((g) => link(g)).join(", ") || "—"}</td>
       <td class="small">${live.filter((g) => g.out === d).map((g) => link(g)).join(", ") || "—"}</td>
-      <td class="small">${names.map((g) => link(g)).join(", ") || '<span class="muted">—</span>'}</td></tr>`);
+      <td class="small">${names.map((g) => link(g) + (g.estimated ? " <span class='muted'>(tahmini)</span>" : "")).join(", ") || '<span class="muted">—</span>'}</td></tr>`);
   }
   $("days14").innerHTML = `<thead><tr><th>Gün</th><th>Konaklayan</th><th class="num">Günübirlik</th><th class="num">Otelde toplam</th><th>Giriş</th><th>Çıkış</th><th>Otelde olan gruplar</th></tr></thead><tbody>${rows.join("")}</tbody>`;
   drawGroupList();
@@ -266,7 +272,7 @@ function drawGroupList() {
     const ci = HG.confirmInfo(g, g.confirmedAt);
     b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(dTR(g.in))} → ${esc(dTR(g.out))}${g.leader ? " · " + esc(g.leader) : ""}</span></span>
       <span class="row small"><span class="chip ${chip}">${esc(g.status)}</span>${ci.stage === "ara" ? '<span class="chip warn">Aranmalı</span>' : ci.stage === "gecikti" ? '<span class="chip crit">Kesinleşme gecikti</span>' : ""}${g.submittedAt ? '<span class="chip ok">Form geldi</span>' : '<span class="chip warn">Form bekleniyor</span>'}${g.pending ? '<span class="chip warn">Değişiklik talebi</span>' : ""}${g.alerts ? `<span class="chip crit">${g.alerts} uyarı</span>` : ""}
-      <span class="muted">${g.rooms} oda · ${g.sleepers} konaklayan · ${g.days} günübirlik · ${eur(g.due)}${g.paid ? ` (ödenen ${eur(g.paid)})` : ""}</span></span>`;
+      <span class="muted">${g.estimated ? `~${g.sleepersEff} konaklayan · ~${g.daysEff} günübirlik (tahmini) · ~${eur(g.dueEff)}` : `${g.rooms} oda · ${g.sleepers} konaklayan · ${g.days} günübirlik · ${eur(g.due)}${g.paid ? ` (ödenen ${eur(g.paid)})` : ""}`}</span></span>`;
     b.onclick = () => openGroup(g.id); $("glist").appendChild(b);
   });
 }
@@ -276,7 +282,7 @@ $("reload").onclick = openList;
 $("newToggle").onclick = () => { $("newCard").classList.toggle("hidden"); if (!$("newCard").classList.contains("hidden")) $("n_name").focus(); };
 $("newForm").onsubmit = async (e) => {
   e.preventDefault();
-  const s = { name: $("n_name").value, leader: $("n_leader").value, in: $("n_in").value, out: $("n_out").value, paymode: $("n_paymode").value, pNight: $("n_pNight").value, pDay: $("n_pDay").value, pSingle: 15, deadline: 3, status: "Opsiyon" };
+  const s = { name: $("n_name").value, leader: $("n_leader").value, in: $("n_in").value, out: $("n_out").value, paymode: $("n_paymode").value, pNight: $("n_pNight").value, pDay: $("n_pDay").value, estSleepers: $("n_estS").value, estDays: $("n_estD").value, pSingle: 15, deadline: 3, status: "Opsiyon" };
   if (s.out < s.in) return toast("Çıkış tarihi gelişten önce olamaz.");
   try { const r = await api("/api/groups", { method: "POST", body: { settings: s } }); e.target.reset(); $("newCard").classList.add("hidden"); toast("Grup oluşturuldu"); openGroup(r.id, "ayar"); }
   catch (err) { authFail(err); }

@@ -88,6 +88,7 @@ export function cleanSettings(s = {}) {
     in: date(s.in), out: date(s.out), paymode: s.paymode === 'grup' ? 'grup' : 'kisi',
     pNight: num(s.pNight), pDay: num(s.pDay), pSingle: num(s.pSingle), deadline: num(s.deadline, 0, 60),
     salon: str(s.salon, 80), notes: str(s.notes, 1000),
+    estSleepers: num(s.estSleepers, 0, 1000), estDays: num(s.estDays, 0, 2000),
     confirmDays: s.confirmDays === undefined || s.confirmDays === '' ? 7 : num(s.confirmDays, 0, 120),
     callDays: s.callDays === undefined || s.callDays === '' ? 3 : num(s.callDays, 0, 60),
     status: ['Teklif', 'Opsiyon', 'Kesin', 'İptal'].includes(s.status) ? s.status : 'Opsiyon',
@@ -143,6 +144,14 @@ export function summary(g) {
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
     confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
     ...money(g), salon: g.settings.salon || '',
+    ...(() => {
+      // liste gelene kadar doluluk ve tutar tahmini kişi sayısıyla hesaplanır
+      const m = money(g), est = !g.submittedAt && ((g.settings.estSleepers || 0) + (g.settings.estDays || 0) > 0);
+      return est ? {
+        estimated: true, sleepersEff: g.settings.estSleepers || 0, daysEff: g.settings.estDays || 0,
+        dueEff: (g.settings.estSleepers || 0) * g.settings.pNight * m.nights + (g.settings.estDays || 0) * g.settings.pDay,
+      } : { estimated: false, sleepersEff: (s.rooms || []).reduce((x, r) => x + r.people.length, 0), daysEff: (s.days || []).length, dueEff: m.due };
+    })(),
     confirmedAt: g.confirmedAt || null, pending: !!g.pending, lastCall: (g.calls || [])[0] || null, leader: g.settings.leader, phone: g.settings.phone,
   };
 }
