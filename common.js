@@ -41,6 +41,7 @@ const HG = (() => {
     const x = today(), arrived = x >= addDays(st.in, 0);
     let stage = "bekliyor";
     if (st.status === "İptal") stage = "iptal";
+    else if (st.status === "Talep" || !st.in) stage = "talep";
     else if (st.status === "Kesin" || confirmedAt) stage = "kesin";
     else if (arrived) stage = "geldi";
     else if (x > confirmBy) stage = "gecikti";
@@ -84,7 +85,9 @@ const HG = (() => {
     if (ci.stage === "ara") F.push(["warn", t("fl_call", { d: fmt(ci.confirmBy), n: ci.daysToConfirm })]);
     if (ci.stage === "gecikti") F.push(["crit", t("fl_late", { d: fmt(ci.confirmBy) })]);
     if (st.in && st.out && st.out < st.in) F.push(["crit", t("fl_dates")]);
-    if (!submittedAt) { const l = daysLeft(st); F.push(l < 0 ? ["crit", t("fl_noform_late")] : ["warn", t("fl_noform", { n: l })]); }
+    if (st.status === "Talep") F.push(["warn", t("fl_talep")]);
+    if (!st.in) F.push(["warn", t("fl_nodate", { w: st.when || "—" })]);
+    if (!submittedAt && st.in && st.status !== "Talep") { const l = daysLeft(st); F.push(l < 0 ? ["crit", t("fl_noform_late")] : ["warn", t("fl_noform", { n: l })]); }
     if (!sub.leader?.phone && !st.phone) F.push(["warn", t("fl_nophone")]);
     if (!sub.leader?.mail && !st.mail) F.push(["warn", t("fl_nomail")]);
     const cnt = {};

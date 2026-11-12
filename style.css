@@ -169,3 +169,9 @@ b.crit{color:var(--crit)}
   .sidefoot{margin:0}
 }
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
+
+.quickbtn{width:100%;margin:2px 0 10px;background:#5fc2b8;border-color:#5fc2b8;color:#0d2424}
+.quickbtn:hover{filter:brightness(1.05)}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(15,25,30,.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto}
+.modal-card{width:100%;max-width:720px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+@media (max-width:999px){.quickbtn{width:auto;margin:0;order:2}}

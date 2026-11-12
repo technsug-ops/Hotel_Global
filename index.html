@@ -15,6 +15,7 @@
 <aside class="side">
   <div class="brand"><b data-i18n="app_name"></b><span data-i18n="panel_sub"></span></div>
   <nav id="mainNav" class="sidenav hidden">
+    <button type="button" class="btn quickbtn" id="quickBtn" data-i18n="q_btn"></button>
     <button type="button" class="navi" id="navDash"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg><span data-i18n="nav_dash"></span></button>
     <button type="button" class="navi" id="navDepts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg><span data-i18n="nav_depts"></span><span id="navTaskCount"></span></button>
     <div class="subnav" id="navDeptList"></div>
@@ -38,7 +39,7 @@
   <section id="v-list" class="hidden" style="display:grid;gap:20px">
     <div class="row between" style="align-items:end">
       <div><h2 id="todayTitle"></h2><span class="small muted" id="lastRefresh"></span></div>
-      <div class="row"><button type="button" class="btn ghost small" id="reload" data-i18n="refresh"></button><button type="button" class="btn" id="newToggle" data-i18n="new_group"></button></div>
+      <div class="row"><button type="button" class="btn ghost small" id="reload" data-i18n="refresh"></button><button type="button" class="btn ghost" id="newToggle" data-i18n="new_group"></button><button type="button" class="btn" id="quickBtn2" data-i18n="q_btn"></button></div>
     </div>
     <div class="card hidden" id="newCard">
       <h3 data-i18n="new_group_title"></h3>
@@ -274,6 +275,27 @@
 </main>
 
 </div>
+<div id="quickModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="qTitle">
+  <form id="quickForm" class="card modal-card">
+    <div class="row between"><h2 id="qTitle" data-i18n="q_title"></h2><button type="button" class="btn ghost small" id="qClose" aria-label="×">×</button></div>
+    <p class="note" data-i18n="q_intro"></p>
+    <div class="grid">
+      <label><span data-i18n="q_leader"></span><input id="q_leader" required maxlength="80" autocomplete="off"></label>
+      <label><span data-i18n="q_phone"></span><input id="q_phone" required maxlength="40" inputmode="tel" placeholder="+49 …" autocomplete="off"></label>
+      <label><span data-i18n="q_name"></span><input id="q_name" maxlength="120" data-i18n-ph="q_name_ph"></label>
+      <label><span data-i18n="q_source"></span><input id="q_source" maxlength="80" data-i18n-ph="q_source_ph"></label>
+      <label><span data-i18n="q_in"></span><input type="date" id="q_in"></label>
+      <label><span data-i18n="q_nights"></span><input type="number" id="q_nights" min="0" max="60" value="1"></label>
+      <label><span data-i18n="q_when"></span><input id="q_when" maxlength="80" data-i18n-ph="q_when_ph"></label>
+      <label><span data-i18n="q_estS"></span><input type="number" id="q_estS" min="0" inputmode="numeric"></label>
+      <label><span data-i18n="q_estD"></span><input type="number" id="q_estD" min="0" inputmode="numeric"></label>
+      <label style="grid-column:1/-1"><span data-i18n="q_notes"></span><textarea id="q_notes" rows="2" maxlength="900" data-i18n-ph="q_notes_ph"></textarea></label>
+      <label><span data-i18n="q_dept"></span><select id="q_dept"></select></label>
+      <label><span data-i18n="q_due"></span><input type="date" id="q_due"></label>
+    </div>
+    <div class="row"><button class="btn" type="submit" data-i18n="q_save"></button><button type="button" class="btn ghost" id="qCancel" data-i18n="q_cancel"></button></div>
+  </form>
+</div>
 <script src="/i18n.js"></script>
 <script src="/common.js"></script>
 <script src="/importer.js"></script>
@@ -293,7 +315,7 @@ function rerender() {
 }
 const SETTINGS = [
   ["name", "f_name", "text"], ["leader", "f_leader", "text"], ["phone", "f_phone", "text"], ["mail", "f_mail", "email"],
-  ["in", "f_in", "date"], ["out", "f_out", "date"], ["status", "f_status", ["Teklif", "Opsiyon", "Kesin", "İptal"]],
+  ["in", "f_in", "date"], ["out", "f_out", "date"], ["status", "f_status", ["Talep", "Teklif", "Opsiyon", "Kesin", "İptal"]], ["source", "f_source", "text"], ["when", "f_when", "text"],
   ["paymode", "f_paymode", [["kisi", "pay_kisi"], ["grup", "pay_grup"]]],
   ["pNight", "f_pNight", "number"], ["pDay", "f_pDay", "number"], ["pSingle", "f_pSingle", "number"],
   ["deadline", "f_deadline", "number"], ["confirmDays", "f_confirmDays", "number"], ["callDays", "f_callDays", "number"],
@@ -363,6 +385,7 @@ function drawDash() {
       else if (left <= 3) todo.push(["warn", g, t("t_list_soon", { n: left, d: HG.fmt(dl) })]);
     }
     if (g.pending) todo.push(["warn", g, t("t_pending")]);
+    if (g.status === "Talep") todo.push(["warn", g, t("t_inquiry", { who: (g.leader || "—") + (g.phone ? " · " + g.phone : ""), age: ageText(g.createdAt) })]);
     if (g.alerts) todo.push(["crit", g, t("t_alerts", { n: g.alerts }), "gecmis"]);
     if (g.out <= tIso && g.due - g.paid > 0.009) todo.push(["crit", g, t("t_open_after", { a: eur(g.due - g.paid), n: g.openAccounts })]);
   });
@@ -450,7 +473,7 @@ $("vAdd").onclick = () => { VENUES = [...VEDIT, { name: "", kind: "salon", cap: 
 $("vSave").onclick = async () => { try { VENUES = (await api("/api/venues", { method: "PUT", body: { venues: VEDIT } })).venues; toast(t("venue_saved")); drawVenueEditor(); drawDash(); } catch (e) { authFail(e); } };
 function drawGroupList() {
   const tIso = todayIso(), f = $("gFilter").value, q = $("gSearch").value.toLocaleLowerCase(I18N.locale);
-  const list = GROUPS.filter((g) => (f === "all") || (f === "cancel" ? g.status === "İptal" : f === "past" ? g.out < tIso && g.status !== "İptal" : g.out >= tIso && g.status !== "İptal"))
+  const list = GROUPS.filter((g) => (f === "all") || (f === "cancel" ? g.status === "İptal" : f === "past" ? g.out && g.out < tIso && g.status !== "İptal" : (!g.out || g.out >= tIso) && g.status !== "İptal"))
     .filter((g) => !q || g.name.toLocaleLowerCase(I18N.locale).includes(q));
   $("glist").innerHTML = list.length ? "" : `<p class="empty">${t("no_groups")}</p>`;
   list.forEach((g) => {
@@ -458,7 +481,7 @@ function drawGroupList() {
     const chip = g.status === "Kesin" ? "ok" : g.status === "İptal" ? "crit" : "warn";
     const ci = HG.confirmInfo(g, g.confirmedAt);
     const line = g.estimated ? `~${g.sleepersEff} · ~${g.daysEff} (${t("estimated")}) · ~${eur(g.dueEff)}` : t("gl_line", { r: g.rooms, s: g.sleepers, d: g.days, a: eur(g.due) }) + (g.paid ? ` (${t("gl_paid", { a: eur(g.paid) })})` : "");
-    b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${esc(dTR(g.in))} → ${esc(dTR(g.out))}${g.leader ? " · " + esc(g.leader) : ""}</span></span>
+    b.innerHTML = `<span><b>${esc(g.name)}</b><br><span class="small muted">${g.in ? `${esc(dTR(g.in))} → ${esc(dTR(g.out))}` : esc(g.when || "—")}${g.leader ? " · " + esc(g.leader) : ""}${g.source ? " · " + esc(g.source) : ""}</span></span>
       <span class="row small"><span class="chip ${chip}">${esc(HG.statusLabel(g.status))}</span>${ci.stage === "ara" ? `<span class="chip warn">${t("chip_call")}</span>` : ci.stage === "gecikti" ? `<span class="chip crit">${t("chip_late")}</span>` : ""}${g.submittedAt ? `<span class="chip ok">${t("chip_form_in")}</span>` : `<span class="chip warn">${t("chip_form_wait")}</span>`}${g.pending ? `<span class="chip warn">${t("chip_pending")}</span>` : ""}${g.alerts ? `<span class="chip crit">${t("chip_alerts", { n: g.alerts })}</span>` : ""}
       <span class="muted">${esc(line)}</span></span>`;
     b.onclick = () => openGroup(g.id); $("glist").appendChild(b);
@@ -592,7 +615,8 @@ function autoItems(dept, days) {
       if (ci.stage === "gecikti") add("crit", g, t("t_confirm_late", { d: HG.fmt(ci.confirmBy) }));
       else if (ci.stage === "ara" && dept === "rezervasyon") add("warn", g, t("t_call", { who: (g.leader || t("f_leader")) + (g.phone ? " · " + g.phone : ""), d: HG.fmt(ci.confirmBy), n: ci.daysToConfirm }));
       if (g.in >= tIso && !g.submittedAt) { const dl = HG.deadlineDate(g), left = Math.round((dl - new Date()) / 864e5); if (left < 0) add("crit", g, t("t_list_late", { d: HG.fmt(dl) })); else if (left <= 3 && dept === "rezervasyon") add("warn", g, t("t_list_soon", { n: left, d: HG.fmt(dl) })); }
-      if (g.pending) add(dept === "mudur" ? "warn" : "warn", g, t("t_pending"));
+      if (g.pending) add("warn", g, t("t_pending"));
+      if (g.status === "Talep" && dept === "rezervasyon") add("warn", g, t("t_inquiry", { who: (g.leader || "—") + (g.phone ? " · " + g.phone : ""), age: ageText(g.createdAt) }));
       if (dept === "mudur" && g.alerts) add("crit", g, t("t_alerts", { n: g.alerts }));
       if (dept === "mudur" && g.out <= tIso && g.due - g.paid > 0.009) add("crit", g, t("t_open_after", { a: eur(g.due - g.paid), n: g.openAccounts }));
     });
@@ -658,6 +682,36 @@ function drawDept() {
 $("deptTabs").onclick = (e) => { const b = e.target.closest("[data-dept]"); if (b) { $("dtForm").classList.add("hidden"); openDepts(b.dataset.dept); } };
 $("navDepts").onclick = () => openDepts(CUR_DEPT);
 $("navDash").onclick = () => openList();
+/* ---------- hızlı grup talebi (telefondayken) ---------- */
+function ageText(iso) { if (!iso) return ""; const m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 6e4)); return m < 60 ? t("age_m", { n: m }) : m < 1440 ? t("age_h", { n: Math.round(m / 60) }) : t("age_d", { n: Math.round(m / 1440) }); }
+function openQuick() {
+  I18N.apply($("quickModal"));
+  $("quickForm").reset(); $("q_nights").value = 1; $("q_due").value = todayIso();
+  $("q_dept").innerHTML = DEPTS.map((d) => `<option value="${d}"${d === "resepsiyon" ? " selected" : ""}>${esc(deptLabel(d))}</option>`).join("");
+  $("quickModal").classList.remove("hidden"); setTimeout(() => $("q_leader").focus(), 30);
+}
+const closeQuick = () => $("quickModal").classList.add("hidden");
+$("quickBtn").onclick = openQuick; $("quickBtn2").onclick = openQuick; $("qClose").onclick = closeQuick; $("qCancel").onclick = closeQuick;
+$("quickModal").addEventListener("click", (e) => { if (e.target === $("quickModal")) closeQuick(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("quickModal").classList.contains("hidden")) closeQuick(); });
+$("quickForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const v = (id) => $(id).value.trim(), leader = v("q_leader"), phone = v("q_phone");
+  if (!leader || !phone) return toast(t("q_need"));
+  const name = v("q_name") || leader, inD = v("q_in"), n = Number(v("q_nights") || 0);
+  let out = ""; if (inD) { const d = new Date(inD + "T12:00:00"); d.setDate(d.getDate() + Math.max(0, n)); out = isoOf(d); }
+  const estS = Number(v("q_estS") || 0), estD = Number(v("q_estD") || 0), dept = $("q_dept").value;
+  const who = myName() || (ROLE === "mudur" ? t("dept_mudur") : "");
+  const btn = e.currentTarget.querySelector('button[type="submit"]'); btn.disabled = true;
+  try {
+    const g = await api("/api/groups", { method: "POST", body: { quick: true, by: who, settings: { name, leader, phone, in: inD, out, estSleepers: estS, estDays: estD, notes: v("q_notes"), source: v("q_source"), when: v("q_when"), status: "Talep", pNight: 0, pDay: 0 } } });
+    const note = t("q_task_note", { p: phone, s: v("q_source") ? t("q_tn_source", { x: v("q_source") }) : "", w: inD ? t("q_tn_when", { x: `${dTR(inD)} → ${dTR(out)}` }) : v("q_when") ? t("q_tn_when", { x: v("q_when") }) : "", e: estS || estD ? t("q_tn_est", { s: estS, d: estD }) : "", n: v("q_notes") ? t("q_tn_note", { x: v("q_notes") }) : "" });
+    await api("/api/tasks", { method: "POST", body: { title: t("q_task", { l: leader }), note, dept, from: ROLE === "mudur" ? "mudur" : "", due: v("q_due") || todayIso(), prio: "acil", groupId: g.id, groupName: name, who } });
+    closeQuick(); toast(t("q_saved", { d: deptLabel(dept) }));
+    [GROUPS] = await Promise.all([api("/api/groups").then((r) => r.groups), loadTasks()]);
+    if (!$("v-list").classList.contains("hidden")) drawDash(); else redrawTasks();
+  } catch (err) { authFail(err); } finally { btn.disabled = false; }
+};
 async function demo(action, btn) {
   if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; toast(t("demo_sure")); setTimeout(() => (btn.dataset.armed = ""), 4000); return; }
   btn.dataset.armed = ""; btn.disabled = true;
@@ -686,7 +740,7 @@ function drawDetail(langOnly) {
   $("dTitle").textContent = st.name;
   const chip = st.status === "Kesin" ? "ok" : st.status === "İptal" ? "crit" : "warn";
   $("dStatus").innerHTML = `<span class="chip ${chip}">${esc(HG.statusLabel(st.status))}</span>`;
-  $("dMeta").innerHTML = `<span>${esc(t("gh_dates", { a: dTR(st.in), b: dTR(st.out), n: HG.nights(st) }))}</span><span>${t("gh_leader")}: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}${st.mail ? " · " + esc(st.mail) : ""}</span>${st.salon ? `<span>${t("f_salon")}: ${esc(st.salon)}</span>` : ""}`;
+  $("dMeta").innerHTML = `${st.in ? `<span>${esc(t("gh_dates", { a: dTR(st.in), b: dTR(st.out), n: HG.nights(st) }))}</span>` : ""}<span>${t("gh_leader")}: ${esc(st.leader || "—")}${st.phone ? " · " + esc(st.phone) : ""}${st.mail ? " · " + esc(st.mail) : ""}</span>${st.salon ? `<span>${t("f_salon")}: ${esc(st.salon)}</span>` : ""}${st.source ? `<span>${t("gh_source")}: ${esc(st.source)}</span>` : ""}${!st.in && st.when ? `<span>${t("f_when")}: ${esc(st.when)}</span>` : ""}`;
   drawGroupTasks();
   const unseen = (G.alerts || []).filter((a) => !a.seen).length;
   $("alertCount").innerHTML = unseen ? `<span class="chip crit">${unseen}</span>` : "";
@@ -699,9 +753,9 @@ function drawDetail(langOnly) {
     $("pendTable").innerHTML = `<thead><tr><th>${t("c_room")}</th><th>${t("c_type")}</th><th>${t("c_guests")}</th></tr></thead><tbody>${P.submission.rooms.map((r, i) => `<tr><td>${esc(t("room_n", { i: i + 1 }))}</td><td>${esc(r.type)}${r.extra ? " +" + esc(t("extra_n", { n: r.extra })) : ""}</td><td class="small">${r.people.map((p) => esc(p.n || t("no_name")) + ` <span class="muted">(${HG.ageLabel(p.a)})</span>`).join(", ")}</td></tr>`).join("")}${P.submission.days.length ? `<tr><td colspan="2">${t("day_guests")}</td><td class="small">${P.submission.days.map((p) => esc(p.n || t("no_name"))).join(", ")}</td></tr>` : ""}</tbody>`;
   }
   const ci = HG.confirmInfo(st, G.confirmedAt);
-  const stageChip = { kesin: "ok", iptal: "crit", ara: "warn", gecikti: "crit", geldi: "warn", bekliyor: "warn" }[ci.stage];
+  const stageChip = { kesin: "ok", iptal: "crit", ara: "warn", gecikti: "crit", geldi: "warn", bekliyor: "warn", talep: "warn" }[ci.stage];
   $("callStage").innerHTML = `<span class="chip ${stageChip}">${t("stage_" + ci.stage)}</span>`;
-  $("callInfo").innerHTML = esc(t("call_info", { c: HG.fmt(ci.callOn), k: HG.fmt(ci.confirmBy), o: HG.fmt(HG.deadlineDate(st)) })) + (G.confirmedAt ? " · " + esc(t("call_confirmed_at", { t: dtTR(G.confirmedAt) })) : "");
+  $("callInfo").innerHTML = !st.in ? esc(t("fl_nodate", { w: st.when || "—" })) : esc(t("call_info", { c: HG.fmt(ci.callOn), k: HG.fmt(ci.confirmBy), o: HG.fmt(HG.deadlineDate(st)) })) + (G.confirmedAt ? " · " + esc(t("call_confirmed_at", { t: dtTR(G.confirmedAt) })) : "");
   const calls = G.calls || [];
   $("callWrap").classList.toggle("hidden", !calls.length);
   $("callTable").innerHTML = calls.length ? `<thead><tr><th>${t("c_time")}</th><th>${t("caller")}</th><th>${t("result")}</th><th>${t("note")}</th></tr></thead><tbody>${calls.map((c) => `<tr><td class="small">${esc(dtTR(c.at))}</td><td class="small">${esc(c.by || "—")}</td><td>${esc(HG.callLabel(c.result))}</td><td class="small">${esc(c.note)}</td></tr>`).join("")}</tbody>` : "";

@@ -116,6 +116,11 @@ function build() {
   G.push(group('demo-teklif', { name: 'DEMO · Hastane Personeli Eğitimi', leader: 'Selin Demo', phone: '+49 151 0000008', in: iso(21), out: iso(23), pNight: 105, pDay: 40, status: 'Teklif', estSleepers: 35, estDays: 25, salon: 'Konferans salonu' }, {
     schedule: [day(21, 'Salon kullanımı', '09:00', '17:00', 'Konferans salonu', 60), day(21, 'Gün boyu ikram', '09:00', '17:00', 'Konferans salonu', 60), day(22, 'Salon kullanımı', '09:00', '15:00', 'Konferans salonu', 60)],
   }));
+  // 9) Müdüre telefonla gelen hızlı talep: tarih net değil, detay resepsiyonda
+  const q = group('demo-hizli-talep', { name: 'DEMO · Fatih Bey’in Derneği', leader: 'Fatih Demo', phone: '+49 151 0000009', status: 'Talep', estSleepers: 40, estDays: 10, when: 'Mart sonu, 2 gece', source: 'Rıdvan Bey’in tanıdığı', notes: 'Salon ve akşam yemeği istiyorlar; fiyat sordular.', pNight: 0 });
+  q.createdAt = new Date(Date.now() - 2 * 3600e3).toISOString();
+  q.history = [{ at: q.createdAt, by: 'Müdüriyet', code: 'h_quick', p: { by: 'Rıdvan Bey (Demo)' }, text: '' }];
+  G.push(q);
   return G;
 }
 
@@ -133,6 +138,7 @@ function tasks() {
     T('demo-t-ara', { title: 'Yakup Hoca’ya tekrar ulaş, kesinleşme tarihi geçti', dept: 'rezervasyon', from: 'mudur', due: iso(0), time: '11:00', prio: 'acil', who: 'Rıdvan Bey (Demo)', groupId: 'demo-yakup-hoca', groupName: 'DEMO · Yakup Hoca Semineri' }),
     T('demo-t-tahsilat', { title: 'Spor Kulübü açık hesabı: fatura e-postayla gönderilsin', dept: 'resepsiyon', from: 'mudur', due: iso(1), who: 'Rıdvan Bey (Demo)', groupId: 'demo-acik-hesap', groupName: 'DEMO · Spor Kulübü', status: 'bekliyor' },
       [{ at: at(0, 8), who: 'Ayşe (Resepsiyon)', code: 'tl_comment', p: { text: 'Fatura adresi eksik, grup sorumlusundan istendi.' } }]),
+    T('demo-t-talep', { title: 'Yeni grup talebi: Fatih Demo aranacak, detaylar alınacak', dept: 'resepsiyon', from: 'mudur', due: iso(0), prio: 'acil', who: 'Rıdvan Bey (Demo)', groupId: 'demo-hizli-talep', groupName: 'DEMO · Fatih Bey’in Derneği', note: 'Tel: +49 151 0000009\nYönlendiren: Rıdvan Bey’in tanıdığı\nZaman: Mart sonu, 2 gece\nYaklaşık: 40 konaklayan, 10 günübirlik\nNot: Salon ve akşam yemeği istiyorlar; fiyat sordular.' }),
     T('demo-t-lamba', { title: '3. kat koridor lambası yandı', dept: 'haus', from: 'resepsiyon', due: iso(-2), who: 'Ayşe (Resepsiyon)', status: 'bitti', doneAt: at(-1, 15), assignee: 'Murat (Teknik)' }),
   ];
 }

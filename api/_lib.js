@@ -100,11 +100,11 @@ export function cleanSettings(s = {}) {
     name: str(s.name, 120), leader: str(s.leader, 80), phone: str(s.phone, 40), mail: str(s.mail, 120),
     in: date(s.in), out: date(s.out), paymode: s.paymode === 'grup' ? 'grup' : 'kisi',
     pNight: num(s.pNight), pDay: num(s.pDay), pSingle: num(s.pSingle), deadline: num(s.deadline, 0, 60),
-    salon: str(s.salon, 80), notes: str(s.notes, 1000),
+    salon: str(s.salon, 80), notes: str(s.notes, 1000), source: str(s.source, 80), when: str(s.when, 80),
     estSleepers: num(s.estSleepers, 0, 1000), estDays: num(s.estDays, 0, 2000),
     confirmDays: s.confirmDays === undefined || s.confirmDays === '' ? 7 : num(s.confirmDays, 0, 120),
     callDays: s.callDays === undefined || s.callDays === '' ? 3 : num(s.callDays, 0, 60),
-    status: ['Teklif', 'Opsiyon', 'Kesin', 'İptal'].includes(s.status) ? s.status : 'Opsiyon',
+    status: ['Talep', 'Teklif', 'Opsiyon', 'Kesin', 'İptal'].includes(s.status) ? s.status : 'Opsiyon',
   };
 }
 function cleanPerson(p = {}) {
@@ -156,7 +156,7 @@ export function summary(g) {
     sleepers: (s.rooms || []).reduce((x, r) => x + r.people.length, 0), days: (s.days || []).length,
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
     confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
-    ...money(g), salon: g.settings.salon || '',
+    ...money(g), salon: g.settings.salon || '', source: g.settings.source || '', when: g.settings.when || '', createdAt: g.createdAt || '',
     roomTypes: (s.rooms || []).reduce((m, r) => ((m[r.type] = (m[r.type] || 0) + 1), m), {}),
     extraBeds: (s.rooms || []).reduce((x, r) => x + (r.extra || 0), 0), cribs: (s.rooms || []).filter((r) => r.crib).length,
     schedule: (g.schedule || []).map(({ date, start, end, kind, venue, pax, title }) => ({ date, start, end, kind, venue, pax, title })),

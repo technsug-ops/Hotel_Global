@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       const g = {
         id: newId(), token: newId(18), createdAt: now, updatedAt: now, settings,
         submission: { leader: { name: settings.leader, phone: settings.phone, mail: settings.mail }, rooms: [], days: [], groupInv: { inv: '', mail: '' }, groupPay: { paid: false, given: false } },
-        submittedAt: null, history: [{ at: now, by: 'otel', code: 'h_created', p: {}, text: 'Grup kaydı açıldı' }], alerts: [], schedule: [], calls: [],
+        submittedAt: null, history: [{ at: now, by: req.body?.by ? String(req.body.by).slice(0, 60) : 'otel', code: req.body?.quick ? 'h_quick' : 'h_created', p: { by: String(req.body?.by || '').slice(0, 60) }, text: '' }], alerts: [], schedule: [], calls: [],
       };
       await writeJSON(groupPath(g.id), g);
       await writeJSON(tokenPath(g.token), { id: g.id });
