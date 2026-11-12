@@ -1,4 +1,4 @@
-import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, mergeSubmission, describe } from './_lib.js';
+import { requireStaff, readJSON, writeJSON, groupPath, isId, cleanSettings, cleanSubmission, cleanCall, pushAlert, mergeSubmission, describe, cleanSchedule } from './_lib.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -25,6 +25,10 @@ export default async function handler(req, res) {
       g.settings = next;
     }
     if (b.submission) g.submission = cleanSubmission(b.submission, true);
+    if (b.schedule) {
+      g.schedule = cleanSchedule(b.schedule);
+      g.history = [{ at: now, by: 'otel', text: `Program güncellendi: ${g.schedule.length} kalem` }, ...(g.history || [])].slice(0, 200);
+    }
     if (b.alertsSeen) (g.alerts || []).forEach((a) => (a.seen = true));
     if (b.pending === 'approve' && g.pending) {
       g.submission = mergeSubmission(g.submission || {}, g.pending.submission);

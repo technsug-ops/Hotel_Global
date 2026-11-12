@@ -144,6 +144,7 @@ export function summary(g) {
     submittedAt: g.submittedAt || null, alerts: (g.alerts || []).filter((a) => !a.seen).length,
     confirmDays: g.settings.confirmDays ?? 7, callDays: g.settings.callDays ?? 3, deadline: g.settings.deadline,
     ...money(g), salon: g.settings.salon || '',
+    schedule: (g.schedule || []).map(({ date, start, end, kind, venue, pax, title }) => ({ date, start, end, kind, venue, pax, title })),
     ...(() => {
       // liste gelene kadar doluluk ve tutar tahmini kişi sayısıyla hesaplanır
       const m = money(g), est = !g.submittedAt && ((g.settings.estSleepers || 0) + (g.settings.estDays || 0) > 0);
@@ -192,4 +193,36 @@ export function capacityErrors(sub) {
     if (babies > 2) out.push(`Oda ${i + 1}: en fazla 2 bebek (0–2 yaş)`);
   });
   return out;
+}
+
+/* ---------- mekanlar ve program ---------- */
+export const DEFAULT_VENUES = [
+  { name: 'Ön Restaurant', kind: 'restoran', cap: 80 },
+  { name: 'Arka Restaurant', kind: 'restoran', cap: 120 },
+  { name: 'Konferans salonu', kind: 'salon', cap: 0 },
+  { name: 'Kırmızı salon', kind: 'salon', cap: 0 },
+  { name: 'Mavi salon', kind: 'salon', cap: 0 },
+  { name: 'A1', kind: 'salon', cap: 0 },
+  { name: 'Gri salon', kind: 'salon', cap: 0 },
+  { name: '4. Kat mor oda', kind: 'salon', cap: 0 },
+  { name: '4. Kat 2 numaralı salon', kind: 'salon', cap: 0 },
+  { name: '4. Kat 5 numaralı salon', kind: 'salon', cap: 0 },
+  { name: 'Büro', kind: 'salon', cap: 0 },
+  { name: 'Park office', kind: 'salon', cap: 0 },
+];
+export function cleanVenues(list) {
+  const seen = new Set();
+  return (Array.isArray(list) ? list : []).slice(0, 60).map((v) => ({
+    name: str(v.name, 60), kind: v.kind === 'restoran' ? 'restoran' : 'salon', cap: num(v.cap, 0, 2000),
+  })).filter((v) => v.name && !seen.has(v.name.toLocaleLowerCase('tr')) && seen.add(v.name.toLocaleLowerCase('tr')));
+}
+export const SCHEDULE_KINDS = ['Kahvaltı', 'Öğle yemeği', 'Akşam yemeği', 'İkram / ara', 'Salon kullanımı', 'Diğer'];
+const time = (v) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? String(v) : '');
+export function cleanSchedule(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 300).map((e) => ({
+    date: date(e.date), start: time(e.start), end: time(e.end),
+    kind: SCHEDULE_KINDS.includes(e.kind) ? e.kind : 'Diğer', title: str(e.title, 120),
+    venue: str(e.venue, 60), pax: num(e.pax, 0, 2000), note: str(e.note, 200),
+  })).filter((e) => e.date && e.start)
+    .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
 }

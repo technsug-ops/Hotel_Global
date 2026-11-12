@@ -60,6 +60,19 @@
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between">
+        <h3>Mekanlar ve yemekhaneler</h3>
+        <div class="row"><button type="button" class="btn ghost small" id="vPrev" aria-label="Önceki gün">←</button><input type="date" id="vDate" aria-label="Gün" style="max-width:170px"><button type="button" class="btn ghost small" id="vNext" aria-label="Sonraki gün">→</button></div>
+      </div>
+      <div class="tiles" id="meals"></div>
+      <div class="tablewrap"><table id="venueTable"></table></div>
+      <details id="venueEdit"><summary class="small" style="cursor:pointer;font-weight:600">Mekan listesini düzenle (ad, tür, kapasite)</summary>
+        <p class="note">Salon: aynı saatte yalnız bir grup. Restoran: gruplar paylaşır, toplam kişi kapasiteyi aşamaz. Kapasite 0 = kontrol yok.</p>
+        <div id="venueRows" style="display:grid;gap:6px"></div>
+        <div class="row"><button type="button" class="btn ghost small" id="vAdd">+ Mekan</button><button type="button" class="btn small" id="vSave">Mekan listesini kaydet</button></div>
+      </details>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
         <h3>Gruplar</h3>
         <div class="row">
           <select id="gFilter" aria-label="Grup filtresi"><option value="active">Yaklaşan ve devam eden</option><option value="past">Geçmiş</option><option value="cancel">İptal</option><option value="all">Hepsi</option></select>
@@ -79,6 +92,7 @@
     <h2 id="dTitle"></h2>
     <nav role="tablist" aria-label="Grup bölümleri">
       <button role="tab" type="button" data-t="rapor" aria-selected="true">Grup bilgi raporu</button>
+      <button role="tab" type="button" data-t="program" aria-selected="false">Program ve mekanlar</button>
       <button role="tab" type="button" data-t="odalama" aria-selected="false">Odalama</button>
       <button role="tab" type="button" data-t="ayar" aria-selected="false">Ayarlar ve link</button>
       <button role="tab" type="button" data-t="gecmis" aria-selected="false">Uyarılar ve geçmiş <span id="alertCount"></span></button>
@@ -110,6 +124,17 @@
         <p class="note">"Ödendi" ve "Verildi" işaretleri anında kaydedilir.</p></div>
       <div class="card"><h3>Odalama listesi</h3><div class="tablewrap"><table id="roomTable"></table></div></div>
       <div class="row noprint"><button type="button" class="btn ghost small" id="print">Raporu yazdır</button></div>
+    </div>
+
+    <div id="t-program" class="hidden" style="display:grid;gap:18px">
+      <div class="card">
+        <div class="row" style="justify-content:space-between"><h3>Saatlik program · mekan ve yemek planı</h3>
+          <div class="row"><button type="button" class="btn ghost small" id="pTemplate">Her gün kahvaltı + akşam yemeği ekle</button><button type="button" class="btn small" id="pAdd">+ Satır</button></div></div>
+        <p class="note">Her satır bir öğün, ikram veya salon kullanımıdır. Kişi sayısı varsayılan olarak grubun toplamıdır. Mekan çakışmaları ve kapasite diğer gruplarla birlikte kontrol edilir.</p>
+        <div id="pIssues" class="flags"></div>
+        <div class="tablewrap"><table id="pTable"></table></div>
+        <div class="row"><button type="button" class="btn" id="pSave">Programı kaydet</button><span id="pState" class="small muted"></span></div>
+      </div>
     </div>
 
     <div id="t-odalama" class="hidden" style="display:grid;gap:18px">
@@ -172,7 +197,8 @@ $("logout").onclick = async () => { await api("/api/login", { method: "DELETE" }
 const authFail = (e) => { if (e.status === 401) { showView("login"); return true; } toast(e.message); return false; };
 
 /* ---------- gösterge paneli ---------- */
-let GROUPS = [], refreshTimer = null;
+let GROUPS = [], refreshTimer = null, VENUES = [];
+async function loadVenues() { try { VENUES = (await api("/api/venues")).venues; } catch (e) { VENUES = []; } }
 const DAY = 864e5, BEDS = 196, RESTO = 200;
 const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const todayIso = () => isoOf(new Date());
@@ -184,9 +210,10 @@ async function openList() {
   showView("list"); G = null; try { history.replaceState(null, "", "/"); } catch (e) {}
   $("todayTitle").textContent = "Bugün · " + new Date().toLocaleDateString("tr-TR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
   try {
-    GROUPS = (await api("/api/groups")).groups;
+    [GROUPS] = await Promise.all([api("/api/groups").then((r) => r.groups), VENUES.length ? null : loadVenues()]);
     $("lastRefresh").textContent = "Son güncelleme " + new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) + " · her dakika yenilenir";
-    drawDash();
+    if (!$("vDate").value) $("vDate").value = todayIso();
+    drawDash(); drawVenueEditor();
   } catch (e) { authFail(e); }
   clearInterval(refreshTimer);
   refreshTimer = setInterval(() => { if (!$("v-list").classList.contains("hidden") && !document.hidden) openListQuiet(); }, 60000);
@@ -220,6 +247,7 @@ function drawDash() {
     if (g.alerts) todo.push(["crit", g, `${g.alerts} okunmamış uyarı.`, "gecmis"]);
     if (g.out <= t && g.due - g.paid > 0.009) todo.push(["crit", g, `Çıkış yaptı, açık hesap: ${eur(g.due - g.paid)} (${g.openAccounts} hesap).`]);
   });
+  HG.venueIssues(live, VENUES, t, in14).forEach((x) => todo.push([x.level, x.groups[0], `${dayName(x.date)} · ${x.text}`, "program"]));
   todo.sort((a, b) => (a[0] === b[0] ? 0 : a[0] === "crit" ? -1 : 1));
 
   $("kpis").innerHTML = [
@@ -259,8 +287,41 @@ function drawDash() {
       <td class="small">${names.map((g) => link(g) + (g.estimated ? " <span class='muted'>(tahmini)</span>" : "")).join(", ") || '<span class="muted">—</span>'}</td></tr>`);
   }
   $("days14").innerHTML = `<thead><tr><th>Gün</th><th>Konaklayan</th><th class="num">Günübirlik</th><th class="num">Otelde toplam</th><th>Giriş</th><th>Çıkış</th><th>Otelde olan gruplar</th></tr></thead><tbody>${rows.join("")}</tbody>`;
-  drawGroupList();
+  drawGroupList(); drawVenues();
 }
+function drawVenues() {
+  const d = $("vDate").value || todayIso(), live = GROUPS.filter((g) => g.status !== "İptal");
+  const plan = HG.dayPlan(live, VENUES, d), issues = HG.venueIssues(live, VENUES, d, d);
+  const totalOf = (k) => plan.meals[k] || 0;
+  const restCap = VENUES.filter((v) => v.kind === "restoran").reduce((x, v) => x + (v.cap || 0), 0);
+  $("meals").innerHTML = [["Kahvaltı", "Kahvaltı"], ["Öğle yemeği", "Öğle"], ["Akşam yemeği", "Akşam"], ["İkram / ara", "İkram / ara"]].map(([k, l]) =>
+    `<div class="tile ${restCap && k !== "İkram / ara" && totalOf(k) > restCap ? "tile-crit" : ""}"><span class="small muted">${l} · ${esc(dayName(d))}</span><b>${totalOf(k)}</b><span class="small muted">kişi${k !== "İkram / ara" && restCap ? " · yemekhaneler " + restCap : ""}</span></div>`).join("");
+  const issueFor = (vn) => issues.filter((x) => x.venue === vn || (vn === "— mekân yok —" && x.venue === "—"));
+  $("venueTable").innerHTML = `<thead><tr><th>Mekan</th><th>Tür · kapasite</th><th>Program</th><th>Durum</th></tr></thead><tbody>${plan.rows.map(({ venue: v, ev }) => {
+    const iss = issueFor(v.name);
+    return `<tr><td><b>${esc(v.name)}</b>${v.unknown && !v.name.startsWith("—") ? ' <span class="chip warn">listede yok</span>' : ""}</td><td class="small">${v.kind === "restoran" ? "Yemekhane" : "Salon"}${v.cap ? " · " + v.cap : ""}</td>
+      <td class="small">${ev.length ? ev.map((e) => `${esc(e.start)}–${esc(e.end || "?")} · ${link(e.g, "program")} · ${esc(e.kind)}${e.title ? " (" + esc(e.title) + ")" : ""} · ${e.pax} kişi`).join("<br>") : '<span class="muted">boş</span>'}</td>
+      <td>${iss.length ? iss.map((x) => `<span class="chip ${x.level}" title="${esc(x.text)}">${x.level === "crit" ? "Çakışma / kapasite" : "Kontrol"}</span>`).join(" ") : ev.length ? '<span class="chip ok">Uygun</span>' : ""}</td></tr>`;
+  }).join("")}</tbody>`;
+}
+$("vDate").onchange = drawVenues;
+const shiftDay = (n) => { const x = new Date(($("vDate").value || todayIso()) + "T12:00:00"); x.setDate(x.getDate() + n); $("vDate").value = isoOf(x); drawVenues(); };
+$("vPrev").onclick = () => shiftDay(-1); $("vNext").onclick = () => shiftDay(1);
+let VEDIT = [];
+function drawVenueEditor() {
+  VEDIT = VENUES.map((v) => ({ ...v }));
+  const box = $("venueRows"); box.innerHTML = "";
+  VEDIT.forEach((v, i) => {
+    const r = document.createElement("div"); r.className = "person"; r.style.gridTemplateColumns = "1fr 140px 110px auto";
+    r.innerHTML = `<input value="${esc(v.name)}" aria-label="Mekan adı"><select aria-label="Tür"><option value="salon">Salon</option><option value="restoran">Yemekhane</option></select><input type="number" min="0" value="${v.cap || 0}" aria-label="Kapasite"><button type="button" class="btn danger small">Sil</button>`;
+    const [n, k, c, del] = r.children; k.value = v.kind;
+    n.oninput = () => (v.name = n.value); k.onchange = () => (v.kind = k.value); c.oninput = () => (v.cap = Number(c.value));
+    del.onclick = () => { VENUES = VEDIT.filter((_, j) => j !== i); drawVenueEditor(); };
+    box.appendChild(r);
+  });
+}
+$("vAdd").onclick = () => { VENUES = [...VEDIT, { name: "", kind: "salon", cap: 0 }]; drawVenueEditor(); };
+$("vSave").onclick = async () => { try { VENUES = (await api("/api/venues", { method: "PUT", body: { venues: VEDIT } })).venues; toast("Mekan listesi kaydedildi"); drawVenueEditor(); drawDash(); } catch (e) { authFail(e); } };
 function drawGroupList() {
   const t = todayIso(), f = $("gFilter").value, q = $("gSearch").value.toLocaleLowerCase("tr");
   const list = GROUPS.filter((g) => (f === "all") || (f === "cancel" ? g.status === "İptal" : f === "past" ? g.out < t && g.status !== "İptal" : g.out >= t && g.status !== "İptal"))
@@ -297,7 +358,10 @@ document.querySelectorAll("#v-detail nav button").forEach((b) => (b.onclick = ()
 $("back").onclick = openList;
 
 async function openGroup(id, t = "rapor") {
-  try { const r = await api(`/api/group?id=${encodeURIComponent(id)}`); G = r.group; ETAG = r.etag; dirtySub = false; showView("detail"); drawDetail(); tab(t); }
+  try {
+    const [r, gl] = await Promise.all([api(`/api/group?id=${encodeURIComponent(id)}`), api("/api/groups"), VENUES.length ? null : loadVenues()]);
+    GROUPS = gl.groups; G = r.group; ETAG = r.etag; dirtySub = false; PDIRTY = false; showView("detail"); drawDetail(); tab(t);
+  }
   catch (e) { authFail(e); }
 }
 async function save(patch, msg) {
@@ -333,9 +397,49 @@ function drawDetail() {
     el.id = "s_" + k; l.appendChild(el); grid.appendChild(l);
   });
   $("s_notes").value = st.notes || "";
+  if (!PDIRTY) drawProgram();
   $("alerts").innerHTML = (G.alerts || []).length ? G.alerts.map((a) => `<div class="flag ${a.seen ? "" : "crit"}"><span class="chip ${a.seen ? "ok" : "crit"}">${a.seen ? "Okundu" : "Yeni"}</span><span>${esc(dtTR(a.at))} · ${esc(a.text)}</span></div>`).join("") : '<span class="chip ok">Uyarı yok</span>';
   $("history").innerHTML = `<thead><tr><th>Zaman</th><th>Kim</th><th>Ne oldu</th></tr></thead><tbody>${(G.history || []).map((h) => `<tr><td class="small">${esc(dtTR(h.at))}</td><td class="small">${h.by === "grup" ? "Grup sorumlusu" : "Otel"}</td><td>${esc(h.text)}</td></tr>`).join("")}</tbody>`;
 }
+/* ---------- program ve mekanlar ---------- */
+let PDIRTY = false;
+const KINDS = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği", "İkram / ara", "Salon kullanımı", "Diğer"];
+const groupPax = () => { const s = G.submission; const real = s.rooms.reduce((x, r) => x + r.people.length, 0) + s.days.length; return real || (Number(G.settings.estSleepers || 0) + Number(G.settings.estDays || 0)); };
+const stayDates = () => { const out = []; const st = G.settings; if (!st.in) return out; const d = new Date(st.in + "T12:00:00"), e = new Date((st.out || st.in) + "T12:00:00"); while (d <= e) { out.push(isoOf(d)); d.setDate(d.getDate() + 1); } return out; };
+function drawProgram() {
+  G.schedule = G.schedule || [];
+  const vopts = (sel) => `<option value="">— seçin —</option>` + VENUES.map((v) => `<option ${v.name === sel ? "selected" : ""}>${esc(v.name)}</option>`).join("") + (sel && !VENUES.some((v) => v.name === sel) ? `<option selected>${esc(sel)}</option>` : "");
+  const dopts = (sel) => stayDates().map((d) => `<option value="${d}" ${d === sel ? "selected" : ""}>${esc(dayName(d))}</option>`).join("");
+  $("pTable").innerHTML = `<thead><tr><th>Gün</th><th>Başlangıç</th><th>Bitiş</th><th>Tür</th><th>Açıklama</th><th>Mekan</th><th class="num">Kişi</th><th></th></tr></thead><tbody>${G.schedule.map((e, i) => `<tr data-i="${i}">
+    <td><select data-k="date" aria-label="Gün">${dopts(e.date)}</select></td>
+    <td><input type="time" data-k="start" value="${esc(e.start)}" aria-label="Başlangıç"></td>
+    <td><input type="time" data-k="end" value="${esc(e.end)}" aria-label="Bitiş"></td>
+    <td><select data-k="kind" aria-label="Tür">${KINDS.map((k) => `<option ${k === e.kind ? "selected" : ""}>${k}</option>`).join("")}</select></td>
+    <td><input data-k="title" value="${esc(e.title)}" placeholder="ör. çorba börek" aria-label="Açıklama"></td>
+    <td><select data-k="venue" aria-label="Mekan">${vopts(e.venue)}</select></td>
+    <td><input type="number" min="0" data-k="pax" value="${e.pax}" style="width:80px" aria-label="Kişi"></td>
+    <td><button type="button" class="btn danger small" data-del="${i}">Sil</button></td></tr>`).join("") || '<tr><td colspan="8" class="muted">Program yok. "+ Satır" ile ekleyin.</td></tr>'}</tbody>`;
+  $("pTable").querySelectorAll("[data-k]").forEach((el) => (el.oninput = el.onchange = () => { const e = G.schedule[el.closest("tr").dataset.i]; e[el.dataset.k] = el.dataset.k === "pax" ? Number(el.value) : el.value; PDIRTY = true; $("pState").textContent = "Kaydedilmemiş değişiklik"; programIssues(); }));
+  $("pTable").querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => { G.schedule.splice(Number(b.dataset.del), 1); PDIRTY = true; drawProgram(); }));
+  programIssues();
+}
+function programIssues() {
+  const others = GROUPS.filter((g) => g.id !== G.id);
+  const me = { id: G.id, name: G.settings.name, status: G.settings.status, schedule: G.schedule };
+  const iss = HG.venueIssues([...others, me], VENUES).filter((x) => x.groups.some((g) => g.id === G.id));
+  $("pIssues").innerHTML = iss.length ? iss.map((x) => `<div class="flag ${x.level}"><span class="chip ${x.level}">${x.level === "crit" ? "Çakışma" : "Kontrol"}</span><span>${esc(dayName(x.date))} · ${esc(x.text)}</span></div>`).join("") : (G.schedule.length ? '<span class="chip ok">Mekan çakışması yok</span>' : "");
+}
+$("pAdd").onclick = () => { const d = stayDates()[0] || ""; G.schedule.push({ date: d, start: "10:00", end: "12:00", kind: "Salon kullanımı", title: "", venue: G.settings.salon || "", pax: groupPax(), note: "" }); PDIRTY = true; drawProgram(); };
+$("pTemplate").onclick = () => {
+  const ds = stayDates(); if (!ds.length) return toast("Önce grubun tarihlerini girin.");
+  ds.forEach((d, i) => {
+    if (i > 0) G.schedule.push({ date: d, start: "08:00", end: "10:00", kind: "Kahvaltı", title: "", venue: "Arka Restaurant", pax: groupPax(), note: "" });
+    if (i < ds.length - 1) G.schedule.push({ date: d, start: "18:00", end: "19:30", kind: "Akşam yemeği", title: "", venue: "Arka Restaurant", pax: groupPax(), note: "" });
+  });
+  G.schedule.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)); PDIRTY = true; drawProgram(); toast("Eklendi. Saat ve mekanı kontrol edip kaydedin.");
+};
+$("pSave").onclick = async () => { if (await save({ schedule: G.schedule }, "Program kaydedildi")) { PDIRTY = false; $("pState").textContent = ""; GROUPS = (await api("/api/groups").catch(() => ({ groups: GROUPS }))).groups; drawProgram(); } };
+
 $("addRoom").onclick = () => { G.submission.rooms.push({ type: "ZBZ", extra: 0, crib: false, people: [{ n: "", a: "Y" }], payer: 0, invoice: false, inv: "", mail: "", paid: false, given: false, no: "" }); dirtySub = true; drawDetail(); };
 $("addDay").onclick = () => { G.submission.days.push({ n: "", a: "Y", invoice: false, inv: "", mail: "", paid: false, given: false }); dirtySub = true; drawDetail(); };
 $("impOpen").onclick = () => HGImport.mount($("imp"), { getSub: () => G.submission, onApply: () => { dirtySub = true; drawDetail(); tab("odalama"); $("saveState").textContent = "İçe aktarıldı · kaydetmeyi unutmayın"; } });
@@ -356,7 +460,7 @@ $("pendOk").onclick = () => save({ pending: "approve" }, "Değişiklik uyguland�
 $("pendNo").onclick = () => save({ pending: "reject" }, "Değişiklik talebi reddedildi");
 $("seen").onclick = () => save({ alertsSeen: true });
 $("print").onclick = () => window.print();
-window.addEventListener("beforeunload", (e) => { if (dirtySub) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", (e) => { if (dirtySub || PDIRTY) { e.preventDefault(); e.returnValue = ""; } });
 
 boot().then(() => { const m = (location.hash || "").slice(1).split("/"); if (m[0] && /^[A-Za-z0-9_-]{8,40}$/.test(m[0]) && !$("v-list").classList.contains("hidden")) openGroup(m[0], m[1] || "rapor"); });
 </script>

@@ -224,5 +224,49 @@ const HG = (() => {
     return data;
   }
 
-  return { capacityErrors, confirmInfo, fmt, ROOMTYPES, AGES, $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, collectRows, flags, renderEditor, renderReport, api };
+  /* ---------- mekanlar ---------- */
+  const toMin = (t) => { const [h, m] = String(t || "0:0").split(":").map(Number); return h * 60 + (m || 0); };
+  const MEALS = ["Kahvaltı", "Öğle yemeği", "Akşam yemeği"];
+  function events(groups, from, to) {
+    const out = [];
+    groups.filter((g) => g.status !== "İptal").forEach((g) => (g.schedule || []).forEach((e) => {
+      if ((from && e.date < from) || (to && e.date > to)) return;
+      const s = toMin(e.start), en = e.end ? toMin(e.end) : s + 60;
+      out.push({ ...e, s, e2: Math.max(en, s + 1), g });
+    }));
+    return out;
+  }
+  function venueIssues(groups, venues, from, to) {
+    const ev = events(groups, from, to), issues = [], byKey = {};
+    const vmap = Object.fromEntries(venues.map((v) => [v.name, v]));
+    ev.forEach((e) => {
+      if (!e.venue) { issues.push({ level: "warn", date: e.date, venue: "—", groups: [e.g], text: `${e.start} ${e.kind}: mekân seçilmemiş` }); return; }
+      if (!vmap[e.venue]) issues.push({ level: "warn", date: e.date, venue: e.venue, groups: [e.g], text: `"${e.venue}" mekân listesinde yok` });
+      (byKey[e.date + "|" + e.venue] = byKey[e.date + "|" + e.venue] || []).push(e);
+    });
+    for (const k in byKey) {
+      const [d, vn] = k.split("|"), list = byKey[k], v = vmap[vn] || { kind: "salon", cap: 0 };
+      if (v.kind === "salon") {
+        for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+          const a = list[i], b = list[j];
+          if (a.g.id !== b.g.id && a.s < b.e2 && b.s < a.e2) issues.push({ level: "crit", date: d, venue: vn, groups: [a.g, b.g], text: `${vn} çakışması: ${a.g.name} (${a.start}–${a.end || "?"}) ve ${b.g.name} (${b.start}–${b.end || "?"})` });
+        }
+        if (v.cap) list.filter((e) => e.pax > v.cap).forEach((e) => issues.push({ level: "crit", date: d, venue: vn, groups: [e.g], text: `${vn}: ${e.pax} kişi, kapasite ${v.cap} (${e.g.name}, ${e.start})` }));
+      } else if (v.cap) {
+        const points = [...new Set(list.map((e) => e.s))];
+        let worst = null;
+        points.forEach((t) => { const here = list.filter((e) => e.s <= t && t < e.e2); const sum = here.reduce((x, e) => x + e.pax, 0); if (sum > v.cap && (!worst || sum > worst.sum)) worst = { t, sum, here }; });
+        if (worst) issues.push({ level: "crit", date: d, venue: vn, groups: worst.here.map((e) => e.g), text: `${vn} kapasitesi aşılıyor: ${String(Math.floor(worst.t / 60)).padStart(2, "0")}:${String(worst.t % 60).padStart(2, "0")} itibarıyla ${worst.sum} kişi / ${v.cap} (${worst.here.map((e) => e.g.name).join(", ")})` });
+      }
+    }
+    return issues;
+  }
+  function dayPlan(groups, venues, iso) {
+    const ev = events(groups, iso, iso).sort((a, b) => a.s - b.s);
+    const meals = Object.fromEntries([...MEALS, "İkram / ara"].map((m) => [m, ev.filter((e) => e.kind === m).reduce((x, e) => x + e.pax, 0)]));
+    const names = [...new Set([...venues.map((v) => v.name), ...ev.map((e) => e.venue || "— mekân yok —")])];
+    return { meals, rows: names.map((n) => ({ venue: venues.find((v) => v.name === n) || { name: n, kind: "salon", cap: 0, unknown: true }, ev: ev.filter((e) => (e.venue || "— mekân yok —") === n) })) };
+  }
+
+  return { venueIssues, dayPlan, MEALS, toMin, capacityErrors, confirmInfo, fmt, ROOMTYPES, AGES, $, esc, eur, dTR, dtTR, nights, deadlineDate, daysLeft, toast, collectRows, flags, renderEditor, renderReport, api };
 })();
