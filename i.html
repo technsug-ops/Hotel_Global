@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Hotel Global</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <div class="brand"><b data-i18n="app_name"></b><span data-i18n="me_title"></span></div>
+  <span id="langBox"></span>
+</div></header>
+
+<main class="wrap" style="max-width:760px">
+  <div id="err" class="card hidden"><h2 data-i18n="gf_error"></h2><p data-i18n="me_err"></p></div>
+
+  <div id="app" class="hidden" style="display:grid;gap:18px">
+    <section class="card">
+      <h2 id="hello"></h2>
+      <p class="note" data-i18n="me_intro"></p>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="me_new"></h3>
+      <form id="form" class="grid">
+        <label><span data-i18n="lv_type"></span><select name="type" id="type"></select></label>
+        <label><span data-i18n="lv_from"></span><input type="date" name="from" id="from" required></label>
+        <label><span data-i18n="lv_to"></span><input type="date" name="to" id="to" required></label>
+        <label style="grid-column:1/-1"><span data-i18n="lv_note"></span><input name="note" maxlength="500" data-i18n-ph="me_note_ph"></label>
+        <label class="row small hidden" id="auBox" style="gap:6px"><input type="checkbox" name="au" style="width:auto"><span data-i18n="lv_au"></span></label>
+        <div style="grid-column:1/-1" id="hint" class="small"></div>
+        <div><button class="btn" type="submit" data-i18n="me_send"></button></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h3 data-i18n="me_list"></h3>
+      <div id="list" class="flags"></div>
+    </section>
+  </div>
+</main>
+
+<script src="/i18n.js"></script>
+<script src="/common.js"></script>
+<script>
+const { $, esc, toast, api } = HG;
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const TYPES = ["urlaub", "krank", "kind", "sonder", "unbezahlt", "schule"], SICK = ["krank", "kind"];
+let ME = null;
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function workdays(a, b) { if (!a || !b || b < a) return 0; let n = 0; const d = new Date(a + "T12:00:00"), e = new Date(b + "T12:00:00"); for (; d <= e; d.setDate(d.getDate() + 1)) { const w = d.getDay(); if (w && w !== 6) n++; } return n; }
+$("langBox").appendChild(I18N.langSelect(draw));
+
+async function load() {
+  try { ME = await api(`/api/me?t=${encodeURIComponent(TOKEN)}`); $("app").classList.remove("hidden"); $("err").classList.add("hidden"); draw(); }
+  catch (e) { $("app").classList.add("hidden"); $("err").classList.remove("hidden"); I18N.apply(); }
+}
+function draw() {
+  I18N.apply();
+  if (!ME) return;
+  $("hello").textContent = t("me_hello", { n: ME.name });
+  $("tiles").innerHTML = [
+    [t("me_left"), ME.left, t("me_left_sub", { y: ME.year, d: ME.vacDays, u: ME.used }), ME.left < 0 ? "crit" : "ok"],
+    [t("me_pending"), ME.pending, t("me_pending_sub"), ME.pending ? "warn" : ""],
+  ].map(([a, b, c, k]) => `<div class="tile ${k ? "tile-" + k : ""}"><span class="tl">${esc(a)}</span><b>${esc(b)}</b><span class="ts">${esc(c)}</span></div>`).join("");
+  const cur = $("type").value || "urlaub";
+  $("type").innerHTML = TYPES.map((v) => `<option value="${v}">${esc(t("lt_" + v))}</option>`).join(""); $("type").value = cur;
+  if (!$("from").value) { $("from").value = iso(new Date()); $("to").value = iso(new Date()); }
+  hint();
+  $("list").innerHTML = ME.entries.length ? ME.entries.map((x) => {
+    const k = x.status === "abgelehnt" ? "crit" : x.status === "genehmigt" ? "ok" : x.status === "beantragt" ? "warn" : "info";
+    return `<div class="flag ${k}"><span class="chip ${k}">${esc(t("ls_" + x.status))}</span><span><b>${esc(t("lt_" + x.type))}</b> · ${esc(HG.dTR(x.from))}${x.to !== x.from ? " – " + esc(HG.dTR(x.to)) : ""} · ${esc(t("lv_days", { n: x.days }))}${x.note ? `<br><span class="small muted">${esc(x.note)}</span>` : ""}</span></div>`;
+  }).join("") : `<span class="muted small">${t("me_none")}</span>`;
+}
+function hint() {
+  const ty = $("type").value, sick = SICK.includes(ty);
+  $("auBox").classList.toggle("hidden", !sick);
+  const n = workdays($("from").value, $("to").value);
+  const over = ty === "urlaub" && ME && n > ME.left - ME.pending;
+  $("hint").innerHTML = (n ? `<span class="chip info">${esc(t("lv_days", { n }))}</span> ` : "") + (over ? `<span class="chip warn">!</span> ${esc(t("me_over", { n: ME.left - ME.pending }))}` : "");
+}
+["type", "from", "to"].forEach((id) => ($(id).onchange = () => { if (id === "from" && $("to").value < $("from").value) $("to").value = $("from").value; hint(); }));
+$("form").onsubmit = async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.currentTarget), body = Object.fromEntries(fd.entries()); body.au = fd.has("au");
+  if (body.to < body.from) return toast(t("e_leave_dates"));
+  const btn = e.currentTarget.querySelector("button"); btn.disabled = true;
+  try {
+    const r = await api(`/api/me?t=${encodeURIComponent(TOKEN)}`, { method: "POST", body });
+    toast(r.status === "beantragt" ? t("me_sent_ok") : t("me_sent_sick"));
+    e.currentTarget.reset(); $("from").value = ""; await load();
+  } catch (err) { toast(err.message); } finally { btn.disabled = false; }
+};
+load();
+</script>
+</body>
+</html>

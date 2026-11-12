@@ -202,6 +202,7 @@ async function clear() {
   for (const p of await listPaths('leave/')) { if (p.startsWith('leave/demo-')) continue; const r = await readJSON(p).catch(() => null); if (String(r?.data?.staffId || '').startsWith('demo-')) { await del(p); n++; } }
   // önceki yüklemeden kalmış demo linkleri
   for (const p of await listPaths('tokens/demo-')) await del(p).catch(() => {});
+  for (const p of await listPaths('stafftokens/demo-')) await del(p).catch(() => {});
   return n;
 }
 async function load() {
@@ -210,7 +211,7 @@ async function load() {
   for (const g of gs) { await writeJSON(groupPath(g.id), g); await writeJSON(tokenPath(g.token), { id: g.id }); }
   for (const t of ts) await writeJSON(`tasks/${t.id}.json`, t);
   const st = staff();
-  for (const p of st.people) await writeJSON(`staff/${p.id}.json`, p);
+  for (const p of st.people) { p.token = 'demo-' + newId(14); await writeJSON(`staff/${p.id}.json`, p); await writeJSON(`stafftokens/${p.token}.json`, { id: p.id }); }
   for (const l of st.leave) await writeJSON(`leave/${l.id}.json`, l);
   return { groups: gs.length, tasks: ts.length, staff: st.people.length, leave: st.leave.length };
 }

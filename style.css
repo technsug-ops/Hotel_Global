@@ -168,3 +168,4 @@ b.crit{color:var(--crit)}
   .subnav{display:none}
   .sidefoot{margin:0}
 }
+a.btn{text-decoration:none;display:inline-flex;align-items:center}

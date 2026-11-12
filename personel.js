@@ -91,7 +91,7 @@ function drawPeople() {
       <td class="num">${num1(p.weekHours)}</td><td class="num">${num1(p.rate)}</td><td class="num">${eur0p(s.week)}</td>
       <td class="small">${s.vacUsed} / <b class="${s.vacLeft < 0 ? "crit" : ""}">${s.vacLeft}</b>${s.vacPending ? ` <span class="muted">(+${s.vacPending}?)</span>` : ""}</td>
       <td class="num">${s.sick}</td>
-      <td><button type="button" class="btn ghost small" data-edit="${esc(p.id)}">${t("sf_edit")}</button></td></tr>`;
+      <td><div class="row" style="flex-wrap:nowrap">${p.active ? `<button type="button" class="btn ghost small" data-link="${esc(p.id)}">${t("sf_link")}</button>` : ""}<button type="button" class="btn ghost small" data-edit="${esc(p.id)}">${t("sf_edit")}</button></div></td></tr>`;
   }).join("")}</tbody>`;
 }
 function staffForm(p) {
@@ -111,7 +111,28 @@ function staffForm(p) {
   $("sfForm").classList.remove("hidden"); $("sp_name").focus();
 }
 $("sfNew").onclick = () => { CUR_ST = "people"; drawStaff(); staffForm({ dept: $("sfDeptFilter").value || "resepsiyon", contract: "vollzeit", weekHours: 40, vacDays: 26, active: true, start: todayIso() }); };
-$("sfTable").onclick = (e) => { const b = e.target.closest("[data-edit]"); if (b) { staffForm(STAFF.find((p) => p.id === b.dataset.edit)); $("sfForm").scrollIntoView({ block: "nearest" }); } };
+$("sfTable").onclick = (e) => {
+  const b = e.target.closest("[data-edit]"); if (b) { $("sfLink").classList.add("hidden"); staffForm(STAFF.find((p) => p.id === b.dataset.edit)); $("sfForm").scrollIntoView({ block: "nearest" }); }
+  const l = e.target.closest("[data-link]"); if (l) showLink(l.dataset.link);
+};
+/* kişisel izin linki */
+const personalUrl = (p) => `${location.origin}/i.html?t=${encodeURIComponent(p.token)}&lang=${I18N.lang}`;
+async function newToken(p) { const r = await api(`/api/staff?id=${encodeURIComponent(p.id)}`, { method: "PUT", body: { regenerateLink: true } }); await loadStaffAll(); return STAFF.find((x) => x.id === p.id) || r.person; }
+async function showLink(id, regen = false) {
+  let p = STAFF.find((x) => x.id === id); if (!p) return;
+  try { if (!p.token || regen) p = await newToken(p); } catch (e) { return authFail(e); }
+  const url = personalUrl(p), digits = (p.phone || "").replace(/[^\d]/g, "").replace(/^00/, "");
+  const wa = `https://wa.me/${digits}?text=${encodeURIComponent(t("sf_link_wa_text", { n: p.name.split(" ")[0], u: url }))}`;
+  $("sfForm").classList.add("hidden");
+  $("sfLink").innerHTML = `<div class="row between"><h3>${esc(t("sf_link_title"))} · ${esc(p.name)}</h3><button type="button" class="btn ghost small" id="slClose">×</button></div>
+    <p class="note">${esc(t("sf_link_note"))}</p>
+    <div class="linkbox"><input readonly value="${esc(url)}" id="slUrl" style="flex:1;min-width:220px"><button type="button" class="btn small" id="slCopy">${t("sf_link_copy")}</button><a class="btn ghost small" href="${esc(wa)}" target="_blank" rel="noopener">${t("sf_link_wa")}</a></div>
+    <div><button type="button" class="btn ghost small" id="slNew">${t("sf_link_new")}</button></div>`;
+  $("sfLink").classList.remove("hidden"); $("sfLink").scrollIntoView({ block: "nearest" });
+  $("slClose").onclick = () => $("sfLink").classList.add("hidden");
+  $("slCopy").onclick = async () => { try { await navigator.clipboard.writeText(url); } catch (e) { $("slUrl").select(); document.execCommand("copy"); } toast(t("sf_link_copied")); };
+  $("slNew").onclick = (e) => { const b = e.currentTarget; if (b.dataset.armed !== "1") { b.dataset.armed = "1"; toast(t("demo_sure")); return; } showLink(id, true); };
+}
 $("sfForm").onsubmit = async (e) => {
   e.preventDefault();
   const g = (k) => $("sp_" + k).value;
@@ -142,7 +163,7 @@ function drawLeave() {
   const pend = LEAVE.filter((x) => x.status === "beantragt").sort((a, b) => a.from.localeCompare(b.from));
   $("lvPending").innerHTML = pend.length ? pend.map((x) => {
     const p = STAFF.find((s) => s.id === x.staffId) || {};
-    return `<div class="flag warn"><span class="chip warn">${esc(t("lt_" + x.type))}</span><div style="display:grid;gap:4px;flex:1"><div><b>${esc(pName(x.staffId))}</b> · ${esc(deptLabel(p.dept))} · ${esc(HG.dTR(x.from))} – ${esc(HG.dTR(x.to))} · ${esc(t("lv_days", { n: workdays(x.from, x.to) }))}</div>${x.note ? `<div class="small">${esc(x.note)}</div>` : ""}${x.by ? `<div class="small muted">${esc(x.by)} · ${esc(HG.dtTR(x.createdAt))}</div>` : ""}${leaveWarnings(x).map(([k, m]) => `<div class="small"><span class="chip ${k}">!</span> ${esc(m)}</div>`).join("")}
+    return `<div class="flag warn"><span class="chip warn">${esc(t("lt_" + x.type))}</span><div style="display:grid;gap:4px;flex:1"><div><b>${esc(pName(x.staffId))}</b> · ${esc(deptLabel(p.dept))} · ${esc(HG.dTR(x.from))} – ${esc(HG.dTR(x.to))} · ${esc(t("lv_days", { n: workdays(x.from, x.to) }))}</div>${x.note ? `<div class="small">${esc(x.note)}</div>` : ""}${x.by ? `<div class="small muted">${x.self ? `<span class="chip info">${esc(t("lv_self"))}</span> ` : ""}${esc(x.by)} · ${esc(HG.dtTR(x.createdAt))}</div>` : ""}${leaveWarnings(x).map(([k, m]) => `<div class="small"><span class="chip ${k}">!</span> ${esc(m)}</div>`).join("")}
       <div class="row"><button type="button" class="btn small" data-lv="${esc(x.id)}" data-act="genehmigt">${t("lv_approve")}</button><button type="button" class="btn danger small" data-lv="${esc(x.id)}" data-act="abgelehnt">${t("lv_reject")}</button></div></div></div>`;
   }).join("") : `<span class="chip ok">${t("lv_none_pending")}</span>`;
   const y0 = `${year()}-01-01`, list = LEAVE.filter((x) => x.to >= y0 && x.status !== "beantragt").sort((a, b) => b.from.localeCompare(a.from));

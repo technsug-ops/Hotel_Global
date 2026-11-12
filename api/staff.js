@@ -1,4 +1,5 @@
-import { requireStaff, requireManager, isManager, readJSON, writeJSON, listPaths, newId, isId, fail } from './_lib.js';
+import { requireStaff, requireManager, isManager, readJSON, writeJSON, listPaths, newId, isId, fail, del } from './_lib.js';
+import { staffTokenPath } from './me.js';
 
 /*
  * Personel kartları: staff/{id}.json
@@ -38,8 +39,9 @@ export default async function handler(req, res) {
       const c = cleanStaff(req.body);
       if (!c.name) return fail(res, 400, 'e_staff_name');
       const now = new Date().toISOString();
-      const x = { id: newId(), ...c, createdAt: now, updatedAt: now };
+      const x = { id: newId(), ...c, token: newId(18), createdAt: now, updatedAt: now };
       await writeJSON(path(x.id), x);
+      await writeJSON(staffTokenPath(x.token), { id: x.id });
       return res.status(201).json({ person: x });
     }
     if (req.method === 'PUT') {
@@ -47,6 +49,13 @@ export default async function handler(req, res) {
       if (!isId(id)) return fail(res, 400, 'e_not_found');
       const cur = await readJSON(path(id));
       if (!cur) return fail(res, 404, 'e_not_found');
+      if (req.body?.regenerateLink) {
+        const x = { ...cur.data, token: newId(18), updatedAt: new Date().toISOString() };
+        await writeJSON(path(id), x, cur.etag);
+        await writeJSON(staffTokenPath(x.token), { id });
+        if (cur.data.token) await del(staffTokenPath(cur.data.token)).catch(() => {});
+        return res.status(200).json({ person: x });
+      }
       const c = cleanStaff({ ...cur.data, ...req.body });
       if (!c.name) return fail(res, 400, 'e_staff_name');
       const x = { ...cur.data, ...c, updatedAt: new Date().toISOString() };
